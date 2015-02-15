@@ -41,9 +41,11 @@
 #include <mmio.h>
 #include <platform.h>
 #include <platform_def.h>
+#include <sp804_timer.h>
 #include <string.h>
 #include "../../bl1/bl1_private.h"
 #include "hikey_def.h"
+#include "hikey_private.h"
 
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
@@ -141,6 +143,9 @@ static void hikey_gpio_init(void)
 	gpio_direction_output(33);
 	gpio_direction_output(34);
 	gpio_direction_output(35);
+
+	hi6220_timer_init();
+	hi6220_pll_init();
 }
 
 /*******************************************************************************

@@ -61,4 +61,7 @@ BL1_SOURCES		+=	drivers/arm/gpio/gpio.c			\
 				plat/common/aarch64/platform_up_stack.S	\
 				plat/hikey/aarch64/plat_helpers.S		\
 				plat/hikey/aarch64/bl1_plat_helpers.S	\
-				plat/hikey/bl1_plat_setup.c
+				plat/hikey/bl1_plat_setup.c		\
+				plat/hikey/drivers/hi6553.c		\
+				plat/hikey/drivers/sp804_timer.c	\
+				plat/hikey/pll.c
