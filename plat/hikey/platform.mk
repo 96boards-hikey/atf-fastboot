@@ -56,7 +56,8 @@ PLAT_BL_COMMON_SOURCES	:=	drivers/arm/pl011/pl011_console.S	\
 				plat/common/plat_gic.c			\
 				plat/hikey/plat_io_storage.c
 
-BL1_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
+BL1_SOURCES		+=	drivers/arm/gpio/gpio.c			\
+				lib/cpus/aarch64/cortex_a53.S		\
 				plat/common/aarch64/platform_up_stack.S	\
 				plat/hikey/aarch64/plat_helpers.S		\
 				plat/hikey/aarch64/bl1_plat_helpers.S	\

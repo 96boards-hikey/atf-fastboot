@@ -36,6 +36,8 @@
 #include <console.h>
 #include <debug.h>
 #include <errno.h>
+#include <gpio.h>
+#include <hi6220.h>
 #include <mmio.h>
 #include <platform.h>
 #include <platform_def.h>
@@ -62,6 +64,8 @@ extern unsigned long __COHERENT_RAM_END__;
 
 /* Data structure which holds the extents of the trusted RAM for BL1 */
 static meminfo_t bl1_tzram_layout;
+
+static void hikey_gpio_init(void);
 
 meminfo_t *bl1_plat_sec_mem_layout(void)
 {
@@ -105,6 +109,38 @@ void bl1_plat_arch_setup(void)
  ******************************************************************************/
 void bl1_platform_setup(void)
 {
+	hikey_gpio_init();
+}
+
+static void hikey_gpio_init(void)
+{
+	gpio_register_device(GPIO0_BASE);
+	gpio_register_device(GPIO1_BASE);
+	gpio_register_device(GPIO2_BASE);
+	gpio_register_device(GPIO3_BASE);
+	gpio_register_device(GPIO4_BASE);
+	gpio_register_device(GPIO5_BASE);
+	gpio_register_device(GPIO6_BASE);
+	gpio_register_device(GPIO7_BASE);
+	gpio_register_device(GPIO8_BASE);
+	gpio_register_device(GPIO9_BASE);
+	gpio_register_device(GPIO10_BASE);
+	gpio_register_device(GPIO11_BASE);
+	gpio_register_device(GPIO12_BASE);
+	gpio_register_device(GPIO13_BASE);
+	gpio_register_device(GPIO14_BASE);
+	gpio_register_device(GPIO15_BASE);
+	gpio_register_device(GPIO16_BASE);
+	gpio_register_device(GPIO17_BASE);
+	gpio_register_device(GPIO18_BASE);
+	gpio_register_device(GPIO19_BASE);
+
+	/* Power on indicator LED (User LED0). */
+	gpio_direction_output(32);
+	gpio_set_value(32, 1);
+	gpio_direction_output(33);
+	gpio_direction_output(34);
+	gpio_direction_output(35);
 }
 
 /*******************************************************************************
