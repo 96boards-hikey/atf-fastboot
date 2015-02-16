@@ -29,38 +29,48 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __HIKEY_PRIVATE_H__
-#define __HIKEY_PRIVATE_H__
-
+#include <arch_helpers.h>
+#include <arm_gic.h>
+#include <assert.h>
 #include <bl_common.h>
+#include <debug.h>
+#include <mmio.h>
+#include <platform.h>
+#include <platform_def.h>
+#include <../hikey_def.h>
+
+/* Array of secure interrupts to be configured by the gic driver */
+const unsigned int irq_sec_array[] = {
+	IRQ_SEC_PHY_TIMER,
+	IRQ_SEC_SGI_0,
+	IRQ_SEC_SGI_1,
+	IRQ_SEC_SGI_2,
+	IRQ_SEC_SGI_3,
+	IRQ_SEC_SGI_4,
+	IRQ_SEC_SGI_5,
+	IRQ_SEC_SGI_6,
+	IRQ_SEC_SGI_7
+};
+
+const unsigned int num_sec_irqs = sizeof(irq_sec_array) /
+	sizeof(irq_sec_array[0]);
 
 /*******************************************************************************
- * This structure represents the superset of information that is passed to
- * BL3-1 e.g. while passing control to it from BL2 which is bl31_params
- * and other platform specific params
+ * Macro generating the code for the function setting up the pagetables as per
+ * the platform memory map & initialize the mmu, for the given exception level
  ******************************************************************************/
-typedef struct bl2_to_bl31_params_mem {
-	struct bl31_params bl31_params;
-	struct image_info bl31_image_info;
-	struct image_info bl32_image_info;
-	struct image_info bl33_image_info;
-	struct entry_point_info bl33_ep_info;
-	struct entry_point_info bl32_ep_info;
-	struct entry_point_info bl31_ep_info;
-} bl2_to_bl31_params_mem_t;
 
-/*******************************************************************************
- * Function and variable prototypes
- ******************************************************************************/
-extern int flush_loader_image(void);
-extern int flush_user_images(char *cmdbuf, unsigned long addr,
-			     unsigned long length);
-extern void hi6220_pll_init(void);
-extern void io_setup(void);
-extern int plat_get_image_source(const char *image_name,
-				 uintptr_t *dev_handle,
-				 uintptr_t *image_spec);
-extern void plat_gic_init(void);
-extern void usb_download(void);
+unsigned long plat_get_ns_image_entrypoint(void)
+{
+	return NS_IMAGE_OFFSET;
+}
 
-#endif /* __HIKEY_PRIVATE_H__ */
+uint64_t plat_get_syscnt_freq(void)
+{
+	return 1200000;
+}
+
+void plat_gic_init(void)
+{
+	arm_gic_init(GICC_BASE, GICD_BASE, 0, irq_sec_array, num_sec_irqs);
+}

@@ -29,38 +29,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __HIKEY_PRIVATE_H__
-#define __HIKEY_PRIVATE_H__
-
-#include <bl_common.h>
-
-/*******************************************************************************
- * This structure represents the superset of information that is passed to
- * BL3-1 e.g. while passing control to it from BL2 which is bl31_params
- * and other platform specific params
- ******************************************************************************/
-typedef struct bl2_to_bl31_params_mem {
-	struct bl31_params bl31_params;
-	struct image_info bl31_image_info;
-	struct image_info bl32_image_info;
-	struct image_info bl33_image_info;
-	struct entry_point_info bl33_ep_info;
-	struct entry_point_info bl32_ep_info;
-	struct entry_point_info bl31_ep_info;
-} bl2_to_bl31_params_mem_t;
+#include <assert.h>
+#include <arch_helpers.h>
+#include <arm_gic.h>
+#include <debug.h>
+#include <cci400.h>
+#include <errno.h>
+#include <platform.h>
+#include <platform_def.h>
+#include <psci.h>
+#include "hikey_def.h"
+#include "hikey_private.h"
 
 /*******************************************************************************
- * Function and variable prototypes
+ * Export the platform handlers to enable psci to invoke them
  ******************************************************************************/
-extern int flush_loader_image(void);
-extern int flush_user_images(char *cmdbuf, unsigned long addr,
-			     unsigned long length);
-extern void hi6220_pll_init(void);
-extern void io_setup(void);
-extern int plat_get_image_source(const char *image_name,
-				 uintptr_t *dev_handle,
-				 uintptr_t *image_spec);
-extern void plat_gic_init(void);
-extern void usb_download(void);
+static const plat_pm_ops_t hikey_ops = {
+	.affinst_on		= NULL,
+	.affinst_on_finish	= NULL,
+	.affinst_off		= NULL,
+	.affinst_standby	= NULL,
+	.affinst_suspend	= NULL,
+	.affinst_suspend_finish	= NULL,
+	.system_off		= NULL,
+	.system_reset		= NULL,
+};
 
-#endif /* __HIKEY_PRIVATE_H__ */
+/*******************************************************************************
+ * Export the platform specific power ops.
+ ******************************************************************************/
+int32_t platform_setup_pm(const plat_pm_ops_t **plat_ops)
+{
+	*plat_ops = &hikey_ops;
+	return 0;
+}
