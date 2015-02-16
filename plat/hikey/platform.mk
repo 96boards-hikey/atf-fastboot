@@ -48,6 +48,7 @@ $(eval $(call add_define,PLAT_TSP_LOCATION_ID))
 PLAT_INCLUDES		:=	-Iplat/hikey/include/
 
 PLAT_BL_COMMON_SOURCES	:=	drivers/arm/pl011/pl011_console.S	\
+				drivers/io/io_block.c			\
 				drivers/io/io_fip.c			\
 				drivers/io/io_memmap.c			\
 				drivers/io/io_storage.c			\
@@ -59,9 +60,11 @@ PLAT_BL_COMMON_SOURCES	:=	drivers/arm/pl011/pl011_console.S	\
 BL1_SOURCES		+=	drivers/arm/gpio/gpio.c			\
 				lib/cpus/aarch64/cortex_a53.S		\
 				plat/common/aarch64/platform_up_stack.S	\
-				plat/hikey/aarch64/plat_helpers.S		\
+				plat/hikey/aarch64/plat_helpers.S	\
 				plat/hikey/aarch64/bl1_plat_helpers.S	\
 				plat/hikey/bl1_plat_setup.c		\
+				plat/hikey/drivers/dw_mmc.c		\
 				plat/hikey/drivers/hi6553.c		\
 				plat/hikey/drivers/sp804_timer.c	\
+				plat/hikey/partitions.c			\
 				plat/hikey/pll.c

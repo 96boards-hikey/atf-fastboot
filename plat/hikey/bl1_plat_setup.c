@@ -38,7 +38,9 @@
 #include <errno.h>
 #include <gpio.h>
 #include <hi6220.h>
+#include <hi6553.h>
 #include <mmio.h>
+#include <partitions.h>
 #include <platform.h>
 #include <platform_def.h>
 #include <sp804_timer.h>
@@ -67,7 +69,9 @@ extern unsigned long __COHERENT_RAM_END__;
 /* Data structure which holds the extents of the trusted RAM for BL1 */
 static meminfo_t bl1_tzram_layout;
 
+static void hi6220_pmussi_init(void);
 static void hikey_gpio_init(void);
+static void hikey_hi6553_init(void);
 
 meminfo_t *bl1_plat_sec_mem_layout(void)
 {
@@ -112,6 +116,89 @@ void bl1_plat_arch_setup(void)
 void bl1_platform_setup(void)
 {
 	hikey_gpio_init();
+	hi6220_timer_init();
+	hi6220_pmussi_init();
+	hikey_hi6553_init();
+	hi6220_pll_init();
+	io_setup();
+	get_partition();
+}
+
+/* PMU SSI is the device that could map external PMU register to IO */
+static void hi6220_pmussi_init(void)
+{
+	uint32_t data;
+
+	/*
+	 * After reset, PMUSSI stays in reset mode.
+	 * Now make it out of reset.
+	 */
+	mmio_write_32(AO_SC_PERIPH_RSTDIS4, AO_SC_PERIPH_CLKEN4_PMUSSI);
+	do {
+		data = mmio_read_32(AO_SC_PERIPH_RSTSTAT4);
+	} while (data & AO_SC_PERIPH_CLKEN4_PMUSSI);
+
+	/* set PMU SSI clock latency for read operation */
+	data = mmio_read_32(AO_SC_MCU_SUBSYS_CTRL3);
+	data &= ~AO_SC_MCU_SUBSYS_CTRL3_RCLK_MASK;
+	data |= AO_SC_MCU_SUBSYS_CTRL3_RCLK_3;
+	mmio_write_32(AO_SC_MCU_SUBSYS_CTRL3, data);
+
+	/* enable PMUSSI clock */
+	data = AO_SC_PERIPH_CLKEN5_PMUSSI_CCPU | AO_SC_PERIPH_CLKEN5_PMUSSI_MCU;
+	mmio_write_32(AO_SC_PERIPH_CLKEN5, data);
+	data = AO_SC_PERIPH_CLKEN4_PMUSSI;
+	mmio_write_32(AO_SC_PERIPH_CLKEN4, data);
+
+	/* output high on gpio0 */
+	gpio_direction_output(0);
+	gpio_set_value(0, 1);
+}
+
+static void hikey_hi6553_init(void)
+{
+	int data;
+
+	hi6553_write_8(PERI_EN_MARK, 0x1e);
+	hi6553_write_8(NP_REG_ADJ1, 0);
+	data = DISABLE6_XO_CLK_CONN | DISABLE6_XO_CLK_NFC |
+		DISABLE6_XO_CLK_RF1 | DISABLE6_XO_CLK_RF2;
+	hi6553_write_8(DISABLE6_XO_CLK, data);
+
+	/* configure BUCK0 & BUCK1 */
+	hi6553_write_8(BUCK01_CTRL2, 0x5e);
+	hi6553_write_8(BUCK0_CTRL7, 0x10);
+	hi6553_write_8(BUCK1_CTRL7, 0x10);
+	hi6553_write_8(BUCK0_CTRL5, 0x1e);
+	hi6553_write_8(BUCK1_CTRL5, 0x1e);
+	hi6553_write_8(BUCK0_CTRL1, 0xfc);
+	hi6553_write_8(BUCK1_CTRL1, 0xfc);
+
+	/* configure BUCK2 */
+	hi6553_write_8(BUCK2_REG1, 0x4f);
+	hi6553_write_8(BUCK2_REG5, 0x99);
+	hi6553_write_8(BUCK2_REG6, 0x45);
+
+	/* configure BUCK3 */
+	hi6553_write_8(BUCK3_REG3, 0x02);
+	hi6553_write_8(BUCK3_REG5, 0x99);
+	hi6553_write_8(BUCK3_REG6, 0x41);
+
+	/* configure BUCK4 */
+	hi6553_write_8(BUCK4_REG2, 0x9a);
+	hi6553_write_8(BUCK4_REG5, 0x99);
+	hi6553_write_8(BUCK4_REG6, 0x45);
+
+	/* configure LDO20 */
+	hi6553_write_8(LDO20_REG_ADJ, 0x50);
+
+	hi6553_write_8(NP_REG_CHG, 0x0f);
+	hi6553_write_8(CLK_TOP0, 0x06);
+	hi6553_write_8(CLK_TOP3, 0xc0);
+	hi6553_write_8(CLK_TOP4, 0x00);
+
+	/* select 32.764KHz */
+	hi6553_write_8(CLK19M2_600_586_EN, 0x01);
 }
 
 static void hikey_gpio_init(void)
@@ -143,9 +230,6 @@ static void hikey_gpio_init(void)
 	gpio_direction_output(33);
 	gpio_direction_output(34);
 	gpio_direction_output(35);
-
-	hi6220_timer_init();
-	hi6220_pll_init();
 }
 
 /*******************************************************************************

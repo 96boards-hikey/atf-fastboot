@@ -29,16 +29,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __HIKEY_PRIVATE_H__
-#define __HIKEY_PRIVATE_H__
+#ifndef __PARTITIONS_H__
+#define __PARTITIONS_H__
 
-/*******************************************************************************
- * Function and variable prototypes
- ******************************************************************************/
-extern void hi6220_pll_init(void);
-extern void io_setup(void);
-extern int plat_get_image_source(const char *image_name,
-			  uintptr_t *dev_handle,
-			  uintptr_t *image_spec);
+#define MAX_PARTITION_NUM		128
+#define EFI_NAMELEN			36
 
-#endif /* __HIKEY_PRIVATE_H__ */
+struct ptentry {
+	unsigned int	start;
+	unsigned int	length;
+	unsigned int	flags;
+	unsigned int	loadaddr;
+	unsigned int	loadsize;
+	int		id;
+	char		name[EFI_NAMELEN];
+};
+
+extern int get_partition(void);
+extern struct ptentry *find_ptn(const char *str);
+extern int update_fip_spec(void);
+
+#endif /* __PARTITIONS_H__ */
+
