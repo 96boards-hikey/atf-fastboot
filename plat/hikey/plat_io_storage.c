@@ -301,3 +301,205 @@ int update_fip_spec(void)
 	fip_block_spec.length = ptn->length;
 	return IO_SUCCESS;
 }
+
+static int fetch_entry_head(void *buf, int num, struct entry_head *hd)
+{
+	unsigned char magic[8] = "ENTRYHDR";
+	if (hd == NULL)
+		return IO_FAIL;
+	memcpy((void *)hd, buf, sizeof(struct entry_head) * num);
+	if (!strncmp((void *)hd->magic, (void *)magic, 8))
+		return IO_SUCCESS;
+	return IO_NOT_SUPPORTED;
+}
+
+static int flush_loader(void)
+{
+	struct entry_head entries[5];
+	uintptr_t img_handle, spec;
+	int result = IO_FAIL;
+	size_t bytes_read, length;
+	ssize_t offset;
+	int i, fp;
+
+	result = fetch_entry_head((void *)(FLUSH_BASE + 28),
+				  LOADER_MAX_ENTRIES, entries);
+	if (result) {
+		WARN("failed to parse entries in loader image\n");
+		return result;
+	}
+
+	spec = 0;
+	for (i = 0, fp = 0; i < LOADER_MAX_ENTRIES; i++) {
+		if (entries[i].flag != 1) {
+			WARN("Invalid flag in entry:0x%x\n", entries[i].flag);
+			return IO_NOT_SUPPORTED;
+		}
+		result = plat_get_image_source(BOOT_EMMC_NAME, &emmc_dev_handle,
+					       &spec);
+		if (result) {
+			WARN("failed to open emmc boot area\n");
+			return result;
+		}
+		/* offset in Boot Area1 */
+		offset = MMC_LOADER_BASE + entries[i].start * 512;
+
+		result = io_open(emmc_dev_handle, spec, &img_handle);
+		if (result != IO_SUCCESS) {
+			WARN("Failed to open memmap device\n");
+			return result;
+		}
+		length = entries[i].count * 512;
+
+		result = io_seek(img_handle, IO_SEEK_SET, offset);
+		if (result)
+			goto exit;
+
+		if (i == 1)
+			fp = (entries[1].start - entries[0].start) * 512;
+		result = io_write(img_handle, FLUSH_BASE + fp, length,
+				  &bytes_read);
+		if ((result != IO_SUCCESS) || (bytes_read < length)) {
+			WARN("Failed to write '%s' file (%i)\n",
+			     LOADER_MEM_NAME, result);
+			goto exit;
+		}
+		io_close(img_handle);
+	}
+	return result;
+exit:
+	io_close(img_handle);
+	return result;
+}
+
+/*
+ * Flush l-loader.bin (loader & bl1.bin) into Boot Area1 of eMMC.
+ */
+int flush_loader_image(void)
+{
+	uintptr_t bl1_image_spec;
+	int result = IO_FAIL;
+	size_t bytes_read, length;
+	uintptr_t img_handle;
+
+	result = plat_get_image_source(LOADER_MEM_NAME, &loader_mem_dev_handle,
+				       &bl1_image_spec);
+
+	result = io_open(loader_mem_dev_handle, bl1_image_spec, &img_handle);
+	if (result != IO_SUCCESS) {
+		WARN("Failed to open memmap device\n");
+		goto exit;
+	}
+	length = loader_mem_spec.length;
+	result = io_read(img_handle, FLUSH_BASE, length, &bytes_read);
+	if ((result != IO_SUCCESS) || (bytes_read < length)) {
+		WARN("Failed to load '%s' file (%i)\n", LOADER_MEM_NAME, result);
+		goto exit;
+	}
+	io_close(img_handle);
+
+	result = flush_loader();
+	if (result != IO_SUCCESS) {
+		io_dev_close(loader_mem_dev_handle);
+		return result;
+	}
+exit:
+	io_close(img_handle);
+	io_dev_close(loader_mem_dev_handle);
+	return result;
+}
+
+static int flush_single_image(const char *mmc_name, unsigned long img_addr,
+				ssize_t offset, size_t length)
+{
+	uintptr_t img_handle, spec = 0;
+	size_t bytes_read;
+	int result = IO_FAIL;
+
+	result = plat_get_image_source(mmc_name, &emmc_dev_handle,
+				       &spec);
+	if (result) {
+		WARN("failed to open emmc user data area\n");
+		return result;
+	}
+
+	result = io_open(emmc_dev_handle, spec, &img_handle);
+	if (result != IO_SUCCESS) {
+		WARN("Failed to open memmap device\n");
+		return result;
+	}
+
+	result = io_seek(img_handle, IO_SEEK_SET, offset);
+	if (result)
+		goto exit;
+
+	result = io_write(img_handle, img_addr, length,
+			  &bytes_read);
+	if ((result != IO_SUCCESS) || (bytes_read < length)) {
+		WARN("Failed to write file (%i)\n", result);
+		goto exit;
+	}
+exit:
+	io_close(img_handle);
+	return result;
+}
+
+/*
+ * Flush bios.bin into User Data Area in eMMC
+ */
+int flush_user_images(char *cmdbuf, unsigned long img_addr,
+		      unsigned long img_length)
+{
+	struct entry_head entries[5];
+	struct ptentry *ptn;
+	size_t length;
+	ssize_t offset;
+	int result = IO_FAIL;
+	int i, fp;
+
+	result = fetch_entry_head((void *)img_addr, USER_MAX_ENTRIES, entries);
+	switch (result) {
+	case IO_NOT_SUPPORTED:
+		if (!strncmp(cmdbuf, "fastboot", 8) ||
+		    !strncmp(cmdbuf, "bios", 4)) {
+			update_fip_spec();
+		}
+		ptn = find_ptn(cmdbuf);
+		if (!ptn) {
+			WARN("failed to find partition %s\n", cmdbuf);
+			return IO_FAIL;
+		}
+		img_length = (img_length + 512 - 1) / 512 * 512;
+		result = flush_single_image(NORMAL_EMMC_NAME, img_addr,
+					    ptn->start, img_length);
+		break;
+	case IO_SUCCESS:
+		if (strncmp(cmdbuf, "ptable", 6)) {
+			WARN("it's not for ptable\n");
+			return IO_FAIL;
+		}
+		/* currently it's for partition table */
+		/* the first block is for entry headers */
+		fp = 512;
+
+		for (i = 0; i < USER_MAX_ENTRIES; i++) {
+			if (entries[i].flag != 0) {
+				WARN("Invalid flag in entry:0x%x\n",
+					entries[i].flag);
+				return IO_NOT_SUPPORTED;
+			}
+			length = entries[i].count * 512;
+			offset = MMC_BASE + entries[i].start * 512;
+			VERBOSE("i:%d, start:%x, count:%x\n",
+				i, entries[i].start, entries[i].count);
+			result = flush_single_image(NORMAL_EMMC_NAME,
+						img_addr + fp, offset, length);
+			fp += entries[i].count * 512;
+		}
+		break;
+	case IO_FAIL:
+		WARN("failed to parse entries in user image.\n");
+		return result;
+	}
+	return result;
+}

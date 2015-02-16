@@ -35,10 +35,14 @@
 /*******************************************************************************
  * Function and variable prototypes
  ******************************************************************************/
+extern int flush_loader_image(void);
+extern int flush_user_images(char *cmdbuf, unsigned long addr,
+			     unsigned long length);
 extern void hi6220_pll_init(void);
 extern void io_setup(void);
 extern int plat_get_image_source(const char *image_name,
-			  uintptr_t *dev_handle,
-			  uintptr_t *image_spec);
+				 uintptr_t *dev_handle,
+				 uintptr_t *image_spec);
+extern void usb_download(void);
 
 #endif /* __HIKEY_PRIVATE_H__ */

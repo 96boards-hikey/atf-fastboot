@@ -72,6 +72,7 @@ static meminfo_t bl1_tzram_layout;
 static void hi6220_pmussi_init(void);
 static void hikey_gpio_init(void);
 static void hikey_hi6553_init(void);
+static int query_boot_mode(void);
 
 meminfo_t *bl1_plat_sec_mem_layout(void)
 {
@@ -122,6 +123,23 @@ void bl1_platform_setup(void)
 	hi6220_pll_init();
 	io_setup();
 	get_partition();
+	if (query_boot_mode()) {
+		flush_loader_image();
+		usb_download();
+	}
+}
+
+/* Get the boot mode (normal boot/usb download/uart download) */
+static int query_boot_mode(void)
+{
+	int boot_mode;
+
+	boot_mode = mmio_read_32(ONCHIPROM_PARAM_BASE);
+	if ((boot_mode < 0) || (boot_mode > 2)) {
+		NOTICE("Invalid boot mode is found:%d\n", boot_mode);
+		panic();
+	}
+	return boot_mode;
 }
 
 /* PMU SSI is the device that could map external PMU register to IO */

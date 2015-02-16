@@ -67,4 +67,5 @@ BL1_SOURCES		+=	drivers/arm/gpio/gpio.c			\
 				plat/hikey/drivers/hi6553.c		\
 				plat/hikey/drivers/sp804_timer.c	\
 				plat/hikey/partitions.c			\
-				plat/hikey/pll.c
+				plat/hikey/pll.c			\
+				plat/hikey/usb.c
