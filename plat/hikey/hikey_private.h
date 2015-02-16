@@ -52,6 +52,18 @@ typedef struct bl2_to_bl31_params_mem {
 /*******************************************************************************
  * Function and variable prototypes
  ******************************************************************************/
+void configure_mmu_el1(unsigned long total_base,
+		       unsigned long total_size,
+		       unsigned long ro_start,
+		       unsigned long ro_limit,
+		       unsigned long coh_start,
+		       unsigned long coh_limit);
+void configure_mmu_el3(unsigned long total_base,
+		       unsigned long total_size,
+		       unsigned long ro_start,
+		       unsigned long ro_limit,
+		       unsigned long coh_start,
+		       unsigned long coh_limit);
 extern int flush_loader_image(void);
 extern int flush_user_images(char *cmdbuf, unsigned long addr,
 			     unsigned long length);

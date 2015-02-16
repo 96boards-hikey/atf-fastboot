@@ -37,7 +37,48 @@
 #include <mmio.h>
 #include <platform.h>
 #include <platform_def.h>
+#include <xlat_tables.h>
 #include <../hikey_def.h>
+
+#define MAP_DEVICE	MAP_REGION_FLAT(DEVICE_BASE,			\
+					DEVICE_SIZE,			\
+					MT_DEVICE | MT_RW | MT_SECURE)
+
+#define MAP_NS_DRAM	MAP_REGION_FLAT(DRAM_NS_BASE,			\
+					DRAM_NS_SIZE,			\
+					MT_DEVICE | MT_RW | MT_NS)
+
+#define MAP_ROM_PARAM	MAP_REGION_FLAT(XG2RAM0_BASE,			\
+					0x1000,				\
+					MT_DEVICE | MT_RW | MT_NS)
+
+/*
+ * Table of regions for different BL stages to map using the MMU.
+ * This doesn't include Trusted RAM as the 'mem_layout' argument passed to
+ * configure_mmu_elx() will give the available subset of that,
+ */
+#if IMAGE_BL1
+static const mmap_region_t hikey_mmap[] = {
+	MAP_DEVICE,
+	MAP_NS_DRAM,
+	MAP_ROM_PARAM,
+	{0}
+};
+#endif
+#if IMAGE_BL2
+static const mmap_region_t hikey_mmap[] = {
+	MAP_DEVICE,
+	MAP_NS_DRAM,
+	{0}
+};
+#endif
+#if IMAGE_BL31
+static const mmap_region_t hikey_mmap[] = {
+	MAP_DEVICE,
+	MAP_NS_DRAM,
+	{0}
+};
+#endif
 
 /* Array of secure interrupts to be configured by the gic driver */
 const unsigned int irq_sec_array[] = {
@@ -59,6 +100,32 @@ const unsigned int num_sec_irqs = sizeof(irq_sec_array) /
  * Macro generating the code for the function setting up the pagetables as per
  * the platform memory map & initialize the mmu, for the given exception level
  ******************************************************************************/
+#define DEFINE_CONFIGURE_MMU_EL(_el)				\
+	void configure_mmu_el##_el(unsigned long total_base,	\
+				  unsigned long total_size,	\
+				  unsigned long ro_start,	\
+				  unsigned long ro_limit,	\
+				  unsigned long coh_start,	\
+				  unsigned long coh_limit)	\
+	{							\
+	       mmap_add_region(total_base, total_base,		\
+			       total_size,			\
+			       MT_MEMORY | MT_RW | MT_SECURE);	\
+	       mmap_add_region(ro_start, ro_start,		\
+			       ro_limit - ro_start,		\
+			       MT_MEMORY | MT_RO | MT_SECURE);	\
+	       mmap_add_region(coh_start, coh_start,		\
+			       coh_limit - coh_start,		\
+			       MT_DEVICE | MT_RW | MT_SECURE);	\
+	       mmap_add(hikey_mmap);				\
+	       init_xlat_tables();				\
+								\
+	       enable_mmu_el##_el(0);				\
+	}
+
+/* Define EL1 and EL3 variants of the function initialising the MMU */
+DEFINE_CONFIGURE_MMU_EL(1)
+DEFINE_CONFIGURE_MMU_EL(3)
 
 unsigned long plat_get_ns_image_entrypoint(void)
 {

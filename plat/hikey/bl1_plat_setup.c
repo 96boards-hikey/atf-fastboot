@@ -96,6 +96,10 @@ void bl1_early_platform_setup(void)
 	/* Calculate how much RAM BL1 is using and how much remains free */
 	bl1_tzram_layout.free_base = BL1_RW_BASE;
 	bl1_tzram_layout.free_size = BL1_RW_SIZE;
+	reserve_mem(&bl1_tzram_layout.free_base,
+		    &bl1_tzram_layout.free_size,
+		    BL1_RAM_BASE,
+		    bl1_size);
 
 	INFO("BL1: 0x%lx - 0x%lx [size = %u]\n", BL1_RAM_BASE, BL1_RAM_LIMIT,
 	     bl1_size);
@@ -108,6 +112,12 @@ void bl1_early_platform_setup(void)
  ******************************************************************************/
 void bl1_plat_arch_setup(void)
 {
+	configure_mmu_el3(bl1_tzram_layout.total_base,
+			  bl1_tzram_layout.total_size,
+			  BL1_RO_BASE,
+			  BL1_RO_LIMIT,
+			  BL1_COHERENT_RAM_BASE,
+			  BL1_COHERENT_RAM_LIMIT);
 }
 
 /*******************************************************************************
