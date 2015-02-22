@@ -118,6 +118,29 @@
 
 #define MMC_STS_DATA_BUSY			(1 << 9)
 
+#define MMC_STATUS_CURRENT_STATE_MASK	(0xf << 9)
+#define MMC_STATUS_CURRENT_STATE_SHIFT	9
+#define MMC_STATUS_READY_FOR_DATA	(1 << 8)
+#define MMC_STATUS_SWITCH_ERROR		(1 << 7)
+
+#define MMC_STATE_IDLE			0
+#define MMC_STATE_READY			1
+#define MMC_STATE_IDENT			2
+#define MMC_STATE_STBY			3
+#define MMC_STATE_TRAN			4
+#define MMC_STATE_DATA			5
+#define MMC_STATE_RCV			6
+#define MMC_STATE_PRG			7
+#define MMC_STATE_DIS			8
+#define MMC_STATE_BTST			9
+#define MMC_STATE_SLP			10
+
+#define EXT_CSD_CACHE_CTRL		33
+#define EXT_CSD_PARTITION_CONFIG	179
+
+#define PART_CFG_BOOT_PARTITION1_ENABLE	(1 << 3)
+#define PART_CFG_PARTITION1_ACCESS	(1 << 0)
+
 #define MMC_IDMAC_ENABLE			(1 << 7)
 #define MMC_IDMAC_FB				(1 << 1)
 #define MMC_IDMAC_SWRESET			(1 << 0)
