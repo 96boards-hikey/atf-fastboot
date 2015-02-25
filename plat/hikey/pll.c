@@ -1025,8 +1025,17 @@ static void init_mmc_pll(void)
 	data |= 0x7;
 	hi6553_write_8(0x084, data);
 
-	mmio_write_32((0xf7030000 + 0x400), 1 << 5 | 1 << 21);
-	dsb();
+	/* select SYSPLL as the source of MMC0 */
+	/* select SYSPLL as the source of MUX1 (SC_CLK_SEL0) */
+	mmio_write_32(PERI_SC_CLK_SEL0, 1 << 5 | 1 << 21);
+	do {
+		data = mmio_read_32(PERI_SC_CLK_SEL0);
+	} while (!(data & (1 << 5)));
+	/* select MUX1 as the source of MUX2 (SC_CLK_SEL0) */
+	mmio_write_32(PERI_SC_CLK_SEL0, 1 << 29);
+	do {
+		data = mmio_read_32(PERI_SC_CLK_SEL0);
+	} while (data & (1 << 13));
 
 	mmio_write_32((0xf7030000 + 0x200), (1 << 0));
 	dsb();
@@ -1039,8 +1048,10 @@ static void init_mmc_pll(void)
 	mmio_write_32((0xf7030000 + 0x270), data);
 	dsb();
 
-	mmio_write_32((0xf7030000 + 0x494), (1 << 7) | 0xb);
-	dsb();
+	do {
+		mmio_write_32(PERI_SC_CLKCFG8BIT1, (1 << 7) | 0xb);
+		data = mmio_read_32(PERI_SC_CLKCFG8BIT1);
+	} while ((data & 0xb) != 0xb);
 }
 
 static void reset_mmc0_clk(void)
