@@ -82,7 +82,9 @@ func plat_crash_console_putc
 func plat_report_exception
 	/* save x0 */
 	mov	x8, x0
-	/* Turn On all four LEDs on */
+1:
+	/* Turn On all four LEDs */
+/*
 	ldr	x2, =0xf7020000
 	mov	w0, #0x1
 	str	w0, [x2, #4]
@@ -92,7 +94,40 @@ func plat_report_exception
 	str	w0, [x2, #16]
 	mov	w0, #8
 	str	w0, [x2, #32]
+*/
+	/* Turn on LED according to x0 (0 -- f) */
+	ldr	x2, =0xf7020000
+	and	x1, x0, #1
+	str	w1, [x2, #4]
+	and	x1, x0, #2
+	str	w1, [x2, #8]
+	and	x1, x0, #4
+	str	w1, [x2, #16]
+	and	x1, x0, #8
+	str	w1, [x2, #32]
+
+	/* delay */
+	ldr	x5, =0x40000000
+1001:
+	subs	x5, x5, #1
+	b.ne	1001b
+
+	/* Turn Off all four LEDs */
+	mov	w1, #0x0
+	str	w1, [x2, #4]
+	str	w1, [x2, #8]
+	str	w1, [x2, #16]
+	str	w1, [x2, #32]
+
+	/* delay */
+	ldr	x5, =0x40000000
+1002:
+	subs	x5, x5, #1
+	b.ne	1002b
+
+	b	1b
 	mov	x0, x8
+
 	ret
 
 	/* -----------------------------------------------------
