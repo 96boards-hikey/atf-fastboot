@@ -225,6 +225,17 @@ void hikey_affinst_on_finish(uint32_t afflvl, uint32_t state)
 	arm_gic_pcpu_distif_setup();
 }
 
+static void __dead2 hikey_system_reset(void)
+{
+	VERBOSE("%s: reset system\n", __func__);
+
+	/* Send the system reset request */
+	mmio_write_32(AO_SC_SYS_STAT0, 0x48698284);
+
+	wfi();
+	panic();
+}
+
 /*******************************************************************************
  * Export the platform handlers to enable psci to invoke them
  ******************************************************************************/
@@ -236,7 +247,7 @@ static const plat_pm_ops_t hikey_ops = {
 	.affinst_suspend	= NULL,
 	.affinst_suspend_finish	= NULL,
 	.system_off		= NULL,
-	.system_reset		= NULL,
+	.system_reset		= hikey_system_reset,
 };
 
 /*******************************************************************************
