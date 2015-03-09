@@ -36,6 +36,7 @@
 #include <hi6220.h>
 #include <hi6553.h>
 #include <mmio.h>
+#include <platform_def.h>
 #include <sp804_timer.h>
 
 //#define DDR800
@@ -252,8 +253,10 @@ static int cat_533mhz_800mhz(void)
 
 		mmio_write_32((0xf712c000 + 0x004), 0x8000);
 		dsb();
+		mdelay(1);
 		mmio_write_32((0xf712c000 + 0x004), 0x0);
 		dsb();
+		mdelay(1);
 		mmio_write_32((0xf712c000 + 0x004), 0x801);
 		dsb();
 		mdelay(1);
@@ -1016,7 +1019,6 @@ static void init_ddrc_qos(void)
 	mmio_write_32((0xf7124000 + 0x0d0), 0x3020100);
 }
 
-
 static void init_mmc_pll(void)
 {
 	unsigned int data;
@@ -1120,6 +1122,7 @@ void hi6220_pll_init(void)
 
 	mmio_write_32(0x0, 0xa5a55a5a);
 	INFO("ddr test value:0x%x\n", mmio_read_32(0x0));
+
 	init_mmc_pll();
 	reset_mmc0_clk();
 	init_media_clk();
