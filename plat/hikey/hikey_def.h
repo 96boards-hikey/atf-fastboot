@@ -83,8 +83,8 @@
 /*******************************************************************************
  * CCI-400 related constants
  ******************************************************************************/
-#define CCI400_BASE			0xF6E00000
-#define CCI400_SL_IFACE3_CLUSTER_IX	1
-#define CCI400_SL_IFACE4_CLUSTER_IX	0
+#define CCI400_BASE			0xF6E90000
+#define CCI400_SL_IFACE3_CLUSTER_IX	0
+#define CCI400_SL_IFACE4_CLUSTER_IX	1
 
 #endif /* __HIKEY_DEF_H__ */

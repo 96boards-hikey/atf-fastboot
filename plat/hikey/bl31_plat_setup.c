@@ -114,6 +114,15 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	console_init(PL011_UART0_BASE, PL011_UART0_CLK_IN_HZ, PL011_BAUDRATE);
 
 	/*
+	 * Initialise the CCI-400 driver for BL31 so that it is accessible after
+	 * a warm boot. BL1 should have already enabled CCI coherency for this
+	 * cluster during cold boot.
+	 */
+	cci_init(CCI400_BASE,
+		 CCI400_SL_IFACE3_CLUSTER_IX,
+		 CCI400_SL_IFACE4_CLUSTER_IX);
+
+	/*
 	 * Copy BL3-3 entry point information.
 	 * They are stored in Secure RAM, in BL2's address space.
 	 */

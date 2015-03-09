@@ -89,6 +89,16 @@ void bl1_early_platform_setup(void)
 	/* Initialize the console to provide early debug support */
 	console_init(PL011_UART0_BASE, PL011_UART0_CLK_IN_HZ, PL011_BAUDRATE);
 
+	hi6220_timer_init();
+	/*
+	 * Enable CCI-400 for this cluster. No need for locks as no other cpu is
+	 * active at the moment
+	 */
+	cci_init(CCI400_BASE,
+		 CCI400_SL_IFACE3_CLUSTER_IX,
+		 CCI400_SL_IFACE4_CLUSTER_IX);
+	cci_enable_cluster_coherency(read_mpidr());
+
 	/* Allow BL1 to see the whole Trusted RAM */
 	bl1_tzram_layout.total_base = BL1_RW_BASE;
 	bl1_tzram_layout.total_size = BL1_RW_SIZE;
@@ -127,10 +137,10 @@ void bl1_plat_arch_setup(void)
 void bl1_platform_setup(void)
 {
 	hikey_gpio_init();
-	hi6220_timer_init();
 	hi6220_pmussi_init();
 	hikey_hi6553_init();
 	hi6220_pll_init();
+
 	io_setup();
 	get_partition();
 	if (query_boot_mode()) {

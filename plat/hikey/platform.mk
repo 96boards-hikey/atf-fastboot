@@ -57,11 +57,12 @@ PLAT_BL_COMMON_SOURCES	:=	drivers/arm/pl011/pl011_console.S	\
 				plat/common/plat_gic.c			\
 				plat/hikey/aarch64/hikey_common.c	\
 				plat/hikey/aarch64/plat_helpers.S	\
-				plat/common/aarch64/platform_up_stack.S	\
 				plat/hikey/plat_io_storage.c
 
-BL1_SOURCES		+=	drivers/arm/gpio/gpio.c			\
+BL1_SOURCES		+=	drivers/arm/cci400/cci400.c		\
+				drivers/arm/gpio/gpio.c			\
 				lib/cpus/aarch64/cortex_a53.S		\
+				plat/common/aarch64/platform_up_stack.S	\
 				plat/hikey/aarch64/bl1_plat_helpers.S	\
 				plat/hikey/bl1_plat_setup.c		\
 				plat/hikey/drivers/dw_mmc.c		\
@@ -71,15 +72,19 @@ BL1_SOURCES		+=	drivers/arm/gpio/gpio.c			\
 				plat/hikey/pll.c			\
 				plat/hikey/usb.c
 
-BL2_SOURCES		+=	plat/hikey/bl2_plat_setup.c		\
+BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S	\
+				plat/hikey/bl2_plat_setup.c		\
 				plat/hikey/drivers/dw_mmc.c		\
 				plat/hikey/drivers/sp804_timer.c	\
 				plat/hikey/partitions.c
 
-BL31_SOURCES		+=	drivers/arm/gic/arm_gic.c		\
+BL31_SOURCES		+=	drivers/arm/cci400/cci400.c		\
+				drivers/arm/gic/arm_gic.c		\
 				drivers/arm/gic/gic_v2.c		\
 				drivers/arm/gic/gic_v3.c		\
 				lib/cpus/aarch64/cortex_a53.S		\
+				plat/common/aarch64/platform_mp_stack.S	\
 				plat/hikey/bl31_plat_setup.c		\
+				plat/hikey/drivers/sp804_timer.c	\
 				plat/hikey/plat_pm.c			\
 				plat/hikey/plat_topology.c
