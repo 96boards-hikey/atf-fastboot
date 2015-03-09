@@ -83,18 +83,6 @@ func plat_report_exception
 	/* save x0 */
 	mov	x8, x0
 1:
-	/* Turn On all four LEDs */
-/*
-	ldr	x2, =0xf7020000
-	mov	w0, #0x1
-	str	w0, [x2, #4]
-	mov	w0, #2
-	str	w0, [x2, #8]
-	mov	w0, #4
-	str	w0, [x2, #16]
-	mov	w0, #8
-	str	w0, [x2, #32]
-*/
 	/* Turn on LED according to x0 (0 -- f) */
 	ldr	x2, =0xf7020000
 	and	x1, x0, #1
@@ -125,9 +113,13 @@ func plat_report_exception
 	subs	x5, x5, #1
 	b.ne	1002b
 
-	b	1b
-	mov	x0, x8
+	mrs	x4, esr_el3
+	bl	asm_print_hex
 
+	mov	x0, x8
+	b	1b
+
+	mov	x0, x8
 	ret
 
 	/* -----------------------------------------------------
