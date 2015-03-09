@@ -35,18 +35,202 @@
 #include <debug.h>
 #include <cci400.h>
 #include <errno.h>
+#include <hi6220.h>
+#include <mmio.h>
 #include <platform.h>
 #include <platform_def.h>
 #include <psci.h>
 #include "hikey_def.h"
 #include "hikey_private.h"
 
+static void hikey_power_on_cpu(int cluster, int cpu, int linear_id)
+{
+	unsigned int data, expected;
+
+	/* Set arm64 mode */
+	data = mmio_read_32(ACPU_SC_CPUx_CTRL(linear_id));
+	data |= CPU_CTRL_AARCH64_MODE;
+	mmio_write_32(ACPU_SC_CPUx_CTRL(linear_id), data);
+
+	/* Enable debug module */
+	data = mmio_read_32(ACPU_SC_PDBGUP_MBIST);
+	if (cluster)
+		expected = 1 << (cpu + PDBGUP_CLUSTER1_SHIFT);
+	else
+		expected = 1 << cpu;
+	mmio_write_32(ACPU_SC_PDBGUP_MBIST, data | expected);
+	do {
+		/* RAW barrier */
+		data = mmio_read_32(ACPU_SC_PDBGUP_MBIST);
+	} while (!(data & expected));
+
+	/* Assert reset state */
+	mmio_write_32(ACPU_SC_CPUx_RSTEN(linear_id), 0x1f);
+
+	mmio_write_32(ACPU_SC_CPUx_MTCMOS_EN(linear_id), CPU_MTCMOS_PW);
+
+	do {
+		data = mmio_read_32(ACPU_SC_CPUx_MTCMOS_TIMER_STAT(linear_id));
+	} while (!(data & CPU_MTCMOS_TIMER_STA));
+
+	mmio_write_32(ACPU_SC_CPUx_CLKEN(linear_id), 0x5);
+	do {
+		data = mmio_read_32(ACPU_SC_CPUx_CLK_STAT(linear_id));
+	} while ((data & 5) != 5);
+	mmio_write_32(ACPU_SC_CPUx_CLKEN(linear_id), CPU_MTCMOS_TIMER_STA);
+	do {
+		data = mmio_read_32(ACPU_SC_CPUx_CLK_STAT(linear_id));
+	} while (!(data & CPU_MTCMOS_TIMER_STA));
+
+	mmio_write_32(ACPU_SC_CPUx_PW_ISODIS(linear_id), CPU_PW_ISO);
+	do {
+		data = mmio_read_32(ACPU_SC_CPUx_PW_ISO_STAT(linear_id));
+	} while (data & CPU_PW_ISO);
+
+	/* Release reset state */
+	mmio_write_32(ACPU_SC_CPUx_RSTDIS(linear_id), 0x1f);
+	return;
+}
+
+static void hikey_power_on_cluster(int cluster)
+{
+	unsigned int data, temp;
+
+	/* Set timer stable interval */
+	mmio_write_32(ACPU_SC_A53_x_MTCMOS_TIMER(cluster), 0xff);
+
+	/* Assert cluster reset */
+	if (cluster)
+		data = SRST_CLUSTER1;
+	else
+		data = SRST_CLUSTER0;
+	mmio_write_32(ACPU_SC_RSTEN, data);
+	do {
+		temp = mmio_read_32(ACPU_SC_RST_STAT);
+	} while ((temp & data) != data);
+
+	if (cluster)
+		data = PW_MTCMOS_EN_A53_1_EN;
+	else
+		data = PW_MTCMOS_EN_A53_0_EN;
+	mmio_write_32(ACPU_SC_A53_CLUSTER_MTCMOS_EN, data);
+	do {
+		temp = mmio_read_32(ACPU_SC_A53_CLUSTER_MTCMOS_STA);
+	} while ((temp & data) != data);
+
+	if (cluster)
+		data = HPM_L2_1_CLKEN;
+	else
+		data = HPM_L2_CLKEN;
+	mmio_write_32(ACPU_SC_CLKEN, data);
+	do {
+		temp = mmio_read_32(ACPU_SC_CLK_STAT);
+	} while ((temp & data) != data);
+
+	if (cluster)
+		data = G_CPU_1_CLKEN;
+	else
+		data = G_CPU_CLKEN;
+	mmio_write_32(ACPU_SC_CLKEN, data);
+	do {
+		temp = mmio_read_32(ACPU_SC_CLK_STAT);
+	} while ((temp & data) != data);
+
+	if (cluster)
+		data = PW_ISO_A53_1_EN;
+	else
+		data = PW_ISO_A53_0_EN;
+	mmio_write_32(ACPU_SC_A53_CLUSTER_ISO_DIS, data);
+	do {
+		temp = mmio_read_32(ACPU_SC_A53_CLUSTER_ISO_STA);
+	} while (temp & data);
+
+	/* Release cluster reset */
+	if (cluster)
+		data = SRST_CLUSTER1;
+	else
+		data = SRST_CLUSTER0;
+	mmio_write_32(ACPU_SC_RSTDIS, data);
+	do {
+		temp = mmio_read_32(ACPU_SC_RST_STAT);
+	} while (data & temp);
+
+	return;
+}
+
+/*******************************************************************************
+ * Hikey handler called when an affinity instance is about to be turned on. The
+ * level and mpidr determine the affinity instance.
+ ******************************************************************************/
+int32_t hikey_affinst_on(uint64_t mpidr,
+			 uint64_t sec_entrypoint,
+			 uint32_t afflvl,
+			 uint32_t state)
+{
+	int cpu, cluster;
+	unsigned long linear_id;
+
+	linear_id = platform_get_core_pos(mpidr);
+	cluster = (mpidr & MPIDR_CLUSTER_MASK) >> MPIDR_AFF1_SHIFT;
+	cpu = mpidr & MPIDR_CPU_MASK;
+
+	VERBOSE("#%s, mpidr:%llx, afflvl:%x, state:%x\n", __func__, mpidr, afflvl, state);
+
+	/* directly return for power on */
+	if (state == PSCI_STATE_ON)
+		return PSCI_E_SUCCESS;
+
+	switch (afflvl) {
+	case MPIDR_AFFLVL0:
+		/* Setup cpu entrypoint when it next powers up */
+		mmio_write_32(ACPU_SC_CPUx_RVBARADDR(linear_id),
+			      (unsigned int)(sec_entrypoint >> 2));
+
+		hikey_power_on_cpu(cluster, cpu, linear_id);
+		break;
+
+	case MPIDR_AFFLVL1:
+		hikey_power_on_cluster(cluster);
+		break;
+	}
+
+	return PSCI_E_SUCCESS;
+}
+
+/*******************************************************************************
+ * Hikey handler called when an affinity instance has just been powered on after
+ * being turned off earlier. The level and mpidr determine the affinity
+ * instance. The 'state' arg. allows the platform to decide whether the cluster
+ * was turned off prior to wakeup and do what's necessary to setup it up
+ * correctly.
+ ******************************************************************************/
+void hikey_affinst_on_finish(uint32_t afflvl, uint32_t state)
+{
+	unsigned long mpidr;
+
+	/* Get the mpidr for this cpu */
+	mpidr = read_mpidr_el1();
+
+	/*
+	 * Perform the common cluster specific operations i.e enable coherency
+	 * if this cluster was off.
+	 */
+	if (afflvl != MPIDR_AFFLVL0)
+		cci_enable_cluster_coherency(mpidr);
+
+	/* Enable the gic cpu interface */
+	arm_gic_cpuif_setup();
+
+	/* TODO: if GIC in AON, then just need init for cold boot */
+	arm_gic_pcpu_distif_setup();
+}
+
 /*******************************************************************************
  * Export the platform handlers to enable psci to invoke them
  ******************************************************************************/
 static const plat_pm_ops_t hikey_ops = {
-	.affinst_on		= NULL,
-	.affinst_on_finish	= NULL,
+	.affinst_on		= hikey_affinst_on,
+	.affinst_on_finish	= hikey_affinst_on_finish,
 	.affinst_off		= NULL,
 	.affinst_standby	= NULL,
 	.affinst_suspend	= NULL,
