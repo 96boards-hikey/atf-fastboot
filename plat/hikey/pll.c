@@ -1119,10 +1119,6 @@ void hi6220_pll_init(void)
 	init_freq();
 	init_ddr();
 	init_ddrc_qos();
-
-	mmio_write_32(0x0, 0xa5a55a5a);
-	INFO("ddr test value:0x%x\n", mmio_read_32(0x0));
-
 	init_mmc_pll();
 	reset_mmc0_clk();
 	init_media_clk();
