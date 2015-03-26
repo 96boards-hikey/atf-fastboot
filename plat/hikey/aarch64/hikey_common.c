@@ -48,6 +48,11 @@
 					DRAM_NS_SIZE,			\
 					MT_DEVICE | MT_RW | MT_NS)
 
+//can be in sram/dram depending on PLAT_TSP_LOCATION flag
+#define MAP_TSP_MEM	MAP_REGION_FLAT(TSP_SEC_MEM_BASE, 		\
+					TSP_SEC_MEM_SIZE,		\
+					MT_MEMORY | MT_RW | MT_SECURE)
+
 #define MAP_ROM_PARAM	MAP_REGION_FLAT(XG2RAM0_BASE,			\
 					0x1000,				\
 					MT_DEVICE | MT_RW | MT_NS)
@@ -69,6 +74,7 @@ static const mmap_region_t hikey_mmap[] = {
 static const mmap_region_t hikey_mmap[] = {
 	MAP_DEVICE,
 	MAP_NS_DRAM,
+	MAP_TSP_MEM,
 	{0}
 };
 #endif
@@ -76,6 +82,15 @@ static const mmap_region_t hikey_mmap[] = {
 static const mmap_region_t hikey_mmap[] = {
 	MAP_DEVICE,
 	MAP_NS_DRAM,
+	MAP_TSP_MEM,
+	{0}
+};
+#endif
+#if IMAGE_BL32
+static const mmap_region_t hikey_mmap[] = {
+	MAP_DEVICE,
+	MAP_NS_DRAM,
+//	MAP_TSP_MEM, //Not needed here. Expect bl32/op-tee to configure its own mmap
 	{0}
 };
 #endif
