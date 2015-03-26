@@ -1119,6 +1119,15 @@ void hi6220_pll_init(void)
 	init_freq();
 	init_ddr();
 	init_ddrc_qos();
+
+	/*
+	 * Test memory access. Do not use address 0x0 because the compiler
+	 * may assume it is not a valid address and generate incorrect code
+	 * (GCC 4.9.1 without -fno-delete-null-pointer-checks for instance).
+	 */
+	mmio_write_32(0x4, 0xa5a55a5a);
+	INFO("ddr test value:0x%x\n", mmio_read_32(0x4));
+
 	init_mmc_pll();
 	reset_mmc0_clk();
 	init_media_clk();
