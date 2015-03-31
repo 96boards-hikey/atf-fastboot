@@ -139,27 +139,17 @@
  * The TSP can execute either from Trusted SRAM or Trusted DRAM.
  */
 #define BL32_SRAM_BASE                  BL31_LIMIT
-#define BL32_SRAM_LIMIT                 (BL31_LIMIT+0x00080000) //512K
+#define BL32_SRAM_LIMIT                 (BL31_LIMIT+0x00080000) /* 512K */
 
-#ifndef USE_NS_DRAM
-//Verify actual SDRAM support in hikey
-//Start of SDRAM
 #define BL32_DRAM_BASE                  DRAM_SEC_BASE
 #define BL32_DRAM_LIMIT                 (DRAM_SEC_BASE+DRAM_SEC_SIZE)
-#else
-//Normal DRAM before BL33
-#define BL32_DRAM_BASE                  (NS_IMAGE_OFFSET - DRAM_SEC_SIZE)
-#define BL32_DRAM_LIMIT                 NS_IMAGE_OFFSET
-#endif
 
 #if (PLAT_TSP_LOCATION_ID == PLAT_TRUSTED_SRAM_ID)
 #define TSP_SEC_MEM_BASE		BL32_SRAM_BASE
 #define TSP_SEC_MEM_SIZE		(BL32_SRAM_LIMIT - BL32_SRAM_BASE)
 #define BL32_BASE			BL32_SRAM_BASE
 #define BL32_LIMIT			BL32_SRAM_LIMIT
-//not used
-//#define BL32_PROGBITS_LIMIT	(BL32_SRAM_LIMIT+(TSP_SEC_MEM_SIZE/2))
-#elif (PLAT_TSP_LOCATION_ID == PLAT_DRAM_ID)
+#elif (PLAT_TSP_LOCATION_ID == PLAT_TRUSTED_DRAM_ID)
 #define TSP_SEC_MEM_BASE		BL32_DRAM_BASE
 #define TSP_SEC_MEM_SIZE		(BL32_DRAM_LIMIT - BL32_DRAM_BASE)
 #define BL32_BASE			BL32_DRAM_BASE

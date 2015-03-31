@@ -35,8 +35,8 @@
 PLAT_TSP_LOCATION	:=	tsram
 ifeq (${PLAT_TSP_LOCATION}, tsram)
   PLAT_TSP_LOCATION_ID := PLAT_TRUSTED_SRAM_ID
-else ifeq (${PLAT_TSP_LOCATION}, dram)
-  PLAT_TSP_LOCATION_ID := PLAT_DRAM_ID
+else ifeq (${PLAT_TSP_LOCATION}, tdram)
+  PLAT_TSP_LOCATION_ID := PLAT_TRUSTED_DRAM_ID
 else
   $(error "Unsupported PLAT_TSP_LOCATION value")
 endif
