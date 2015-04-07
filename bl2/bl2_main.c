@@ -417,7 +417,7 @@ void bl2_main(void)
 	e = load_bl30();
 	if (e) {
 		ERROR("Failed to load BL3-0 (%i)\n", e);
-		ERROR("Pls burn mcu image:\n");
+		ERROR("Please burn mcu image:\n");
 		ERROR("  sudo fastboot flash mcuimage mcuimage.bin\n");
 	}
 
