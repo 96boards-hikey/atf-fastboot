@@ -516,6 +516,7 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 						img_addr + fp, offset, length);
 			fp += entries[i].count * 512;
 		}
+		get_partition();
 		break;
 	case IO_FAIL:
 		WARN("failed to parse entries in user image.\n");
