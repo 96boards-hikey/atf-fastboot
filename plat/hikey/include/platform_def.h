@@ -173,7 +173,7 @@
 /*******************************************************************************
  * Load address of BL3-3 in the HiKey port
  ******************************************************************************/
-#define NS_IMAGE_OFFSET			(DRAM_BASE + 0x37000000)  /* 880MB */
+#define NS_IMAGE_OFFSET			(DRAM_BASE + 0x35000000)  /* 848MB */
 
 /*******************************************************************************
  * Platform specific page table and MMU setup constants
