@@ -149,6 +149,25 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 	return &bl31_params_mem.bl31_ep_info;
 }
 
+void init_boardid(void)
+{
+	unsigned int reg;
+
+	/* Set chip id to sram */
+	reg = read_midr_el1();
+	mmio_write_32(MEMORY_AXI_CHIP_ADDR, reg);
+	INFO("[BDID] [%x] midr: 0x%x\n", MEMORY_AXI_CHIP_ADDR, reg);
+
+	/* Set board type to sram */
+	mmio_write_32(MEMORY_AXI_BOARD_TYPE_ADDR, 0x0);
+	INFO("[BDID] [%x] board type: 0\n", MEMORY_AXI_BOARD_TYPE_ADDR);
+
+	/* Set board id to sram */
+	mmio_write_32(MEMORY_AXI_BOARD_ID_ADDR, 0x2b);
+	INFO("[BDID] [%x] board id: 0x2b\n", MEMORY_AXI_BOARD_ID_ADDR);
+	return;
+}
+
 /*******************************************************************************
  * BL1 has passed the extents of the trusted RAM that should be visible to BL2
  * in x0. This memory layout is sitting at the base of the free trusted RAM.
@@ -161,6 +180,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* Setup the BL2 memory layout */
 	bl2_tzram_layout = *mem_layout;
+
+	init_boardid();
+	init_acpu_dvfs();
 
 	io_setup();
 	get_partition();

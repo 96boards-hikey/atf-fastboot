@@ -194,25 +194,3 @@ int hkadc_read_board_id(unsigned int *data)
 
 	return 0;
 }
-
-void init_boardid(void)
-{
-	unsigned int actual_boardid;
-	unsigned int reg;
-
-	hkadc_read_board_id(&actual_boardid);
-
-	/* Set chip id to sram */
-	reg = read_midr_el1();
-	mmio_write_32(MEMORY_AXI_CHIP_ADDR, reg);
-	INFO("[BDID] [%x] midr: 0x%x\n", MEMORY_AXI_CHIP_ADDR, reg);
-
-	/* Set board type to sram */
-	mmio_write_32(MEMORY_AXI_BOARD_TYPE_ADDR, 0x0);
-	INFO("[BDID] [%x] board type: 0\n", MEMORY_AXI_BOARD_TYPE_ADDR);
-
-	/* Set board id to sram */
-	mmio_write_32(MEMORY_AXI_BOARD_ID_ADDR, 0x2b);
-	INFO("[BDID] [%x] board id: 0x2b\n", MEMORY_AXI_BOARD_ID_ADDR);
-	return;
-}
