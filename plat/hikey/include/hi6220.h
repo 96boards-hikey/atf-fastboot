@@ -37,7 +37,6 @@
 #include <hi6220_regs_peri.h>
 #include <hi6220_regs_pmctrl.h>
 
-#include <hisi_hkadc.h>
 #include <hisi_mcu.h>
 #include <hisi_sram_map.h>
 
