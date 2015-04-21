@@ -225,6 +225,39 @@ void hikey_affinst_on_finish(uint32_t afflvl, uint32_t state)
 	arm_gic_pcpu_distif_setup();
 }
 
+static int32_t hikey_do_plat_actions(uint32_t afflvl, uint32_t state)
+{
+	uint32_t max_phys_off_afflvl;
+
+	assert(afflvl <= MPIDR_AFFLVL1);
+
+	if (state != PSCI_STATE_OFF)
+		return -EAGAIN;
+
+	/*
+	 * Find the highest affinity level which will be suspended and postpone
+	 * all the platform specific actions until that level is hit.
+	 */
+	max_phys_off_afflvl = psci_get_max_phys_off_afflvl();
+	assert(max_phys_off_afflvl != PSCI_INVALID_DATA);
+	assert(psci_get_suspend_afflvl() >= max_phys_off_afflvl);
+	if (afflvl != max_phys_off_afflvl)
+		return -EAGAIN;
+
+	return 0;
+}
+
+static void hikey_affinst_off(uint32_t afflvl, uint32_t state)
+{
+	if (hikey_do_plat_actions(afflvl, state) == -EAGAIN)
+		return;
+
+	if (afflvl != MPIDR_AFFLVL0)
+		cci_disable_cluster_coherency(read_mpidr_el1());
+
+	return;
+}
+
 static void __dead2 hikey_system_reset(void)
 {
 	VERBOSE("%s: reset system\n", __func__);
@@ -242,7 +275,7 @@ static void __dead2 hikey_system_reset(void)
 static const plat_pm_ops_t hikey_ops = {
 	.affinst_on		= hikey_affinst_on,
 	.affinst_on_finish	= hikey_affinst_on_finish,
-	.affinst_off		= NULL,
+	.affinst_off		= hikey_affinst_off,
 	.affinst_standby	= NULL,
 	.affinst_suspend	= NULL,
 	.affinst_suspend_finish	= NULL,
