@@ -130,6 +130,42 @@ void bl1_plat_arch_setup(void)
 			  BL1_COHERENT_RAM_LIMIT);
 }
 
+static int sd_card_detect(void)
+{
+	int ret;
+	/* configure GPIO8 as nopull */
+	mmio_write_32(0xf8001830, 0);
+	gpio_direction_input(8);
+	ret = gpio_get_value(8);
+	if (!ret)
+		return 1;
+	return 0;
+}
+
+static void hikey_sd_init(void)
+{
+	int ret;
+
+	/* switch pinmux to SD */
+	mmio_write_32(0xf701000c, 0);
+	mmio_write_32(0xf7010010, 0);
+	mmio_write_32(0xf7010014, 0);
+	mmio_write_32(0xf7010018, 0);
+	mmio_write_32(0xf701001c, 0);
+	mmio_write_32(0xf7010020, 0);
+
+	/* input, 16mA or 12mA */
+	mmio_write_32(0xf701080c, 0x64);
+	mmio_write_32(0xf7010810, 0x54);
+	mmio_write_32(0xf7010814, 0x54);
+	mmio_write_32(0xf7010818, 0x54);
+	mmio_write_32(0xf701081c, 0x54);
+	mmio_write_32(0xf7010820, 0x54);
+	ret = sd_card_detect();
+	if (ret)
+		INFO("SD Card has been detected.\n");
+}
+
 /*******************************************************************************
  * Function which will perform any remaining platform-specific setup that can
  * occur after the MMU and data cache have been enabled.
@@ -140,6 +176,7 @@ void bl1_platform_setup(void)
 	hi6220_pmussi_init();
 	hikey_hi6553_init();
 	hi6220_pll_init();
+	hikey_sd_init();
 
 	io_setup();
 	get_partition();
@@ -236,6 +273,22 @@ static void hikey_hi6553_init(void)
 	hi6553_write_8(CLK_TOP0, 0x06);
 	hi6553_write_8(CLK_TOP3, 0xc0);
 	hi6553_write_8(CLK_TOP4, 0x00);
+
+	/* configure LDO7 & LDO10 for SD slot */
+	data = hi6553_read_8(LDO7_REG_ADJ);
+	data = (data & 0xf8) | 0x2;
+	hi6553_write_8(LDO7_REG_ADJ, data);
+	mdelay(5);
+	/* enable LDO7 */
+	hi6553_write_8(ENABLE2_LDO1_8, 1 << 6);
+	mdelay(5);
+	data = hi6553_read_8(LDO10_REG_ADJ);
+	data = (data & 0xf8) | 0x5;
+	hi6553_write_8(LDO10_REG_ADJ, data);
+	mdelay(5);
+	/* enable LDO10 */
+	hi6553_write_8(ENABLE3_LDO9_16, 1 << 1);
+	mdelay(5);
 
 	/* select 32.764KHz */
 	hi6553_write_8(CLK19M2_600_586_EN, 0x01);
