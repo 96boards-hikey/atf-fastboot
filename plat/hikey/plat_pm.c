@@ -35,6 +35,7 @@
 #include <debug.h>
 #include <cci400.h>
 #include <errno.h>
+#include <gic_v2.h>
 #include <hi6220.h>
 #include <mmio.h>
 #include <platform.h>
@@ -46,6 +47,10 @@
 static void hikey_power_on_cpu(int cluster, int cpu, int linear_id)
 {
 	unsigned int data, expected;
+
+	/* check if cpu has been powered on */
+	if (!(mmio_read_32(ACPU_SC_CPUx_PW_ISO_STAT(linear_id)) & CPU_PW_ISO))
+		return;
 
 	/* Set arm64 mode */
 	data = mmio_read_32(ACPU_SC_CPUx_CTRL(linear_id));
@@ -95,6 +100,15 @@ static void hikey_power_on_cpu(int cluster, int cpu, int linear_id)
 static void hikey_power_on_cluster(int cluster)
 {
 	unsigned int data, temp;
+
+	if (cluster)
+		data = PW_ISO_A53_1_EN;
+	else
+		data = PW_ISO_A53_0_EN;
+
+	/* the cluster has been powered on yet */
+	if (!(mmio_read_32(ACPU_SC_A53_CLUSTER_ISO_STA) & data))
+		return;
 
 	/* Set timer stable interval */
 	mmio_write_32(ACPU_SC_A53_x_MTCMOS_TIMER(cluster), 0xff);
@@ -169,6 +183,7 @@ int32_t hikey_affinst_on(uint64_t mpidr,
 {
 	int cpu, cluster;
 	unsigned long linear_id;
+	unsigned int reg;
 
 	linear_id = platform_get_core_pos(mpidr);
 	cluster = (mpidr & MPIDR_CLUSTER_MASK) >> MPIDR_AFF1_SHIFT;
@@ -182,11 +197,22 @@ int32_t hikey_affinst_on(uint64_t mpidr,
 
 	switch (afflvl) {
 	case MPIDR_AFFLVL0:
+		psci_program_mailbox(mpidr, sec_entrypoint);
+
 		/* Setup cpu entrypoint when it next powers up */
 		mmio_write_32(ACPU_SC_CPUx_RVBARADDR(linear_id),
 			      (unsigned int)(sec_entrypoint >> 2));
 
 		hikey_power_on_cpu(cluster, cpu, linear_id);
+
+		reg = ((0x1 << linear_id) << 16) | (0x1<<15);
+		gicd_write_sgir(GICD_BASE, reg);
+		dsb();
+
+		reg = ((0x1 << linear_id) << 16);
+		gicd_write_sgir(GICD_BASE, reg);
+		dsb();
+
 		break;
 
 	case MPIDR_AFFLVL1:
@@ -207,9 +233,11 @@ int32_t hikey_affinst_on(uint64_t mpidr,
 void hikey_affinst_on_finish(uint32_t afflvl, uint32_t state)
 {
 	unsigned long mpidr;
+	unsigned long linear_id;
 
 	/* Get the mpidr for this cpu */
 	mpidr = read_mpidr_el1();
+	linear_id = platform_get_core_pos(mpidr);
 
 	/*
 	 * Perform the common cluster specific operations i.e enable coherency
@@ -217,6 +245,11 @@ void hikey_affinst_on_finish(uint32_t afflvl, uint32_t state)
 	 */
 	if (afflvl != MPIDR_AFFLVL0)
 		cci_enable_cluster_coherency(mpidr);
+
+	psci_program_mailbox(mpidr, 0x0);
+
+	/* Cleanup cpu entry point */
+	mmio_write_32(ACPU_SC_CPUx_RVBARADDR(linear_id), 0x0);
 
 	/* Enable the gic cpu interface */
 	arm_gic_cpuif_setup();
