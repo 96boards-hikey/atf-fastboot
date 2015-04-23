@@ -291,6 +291,58 @@ static void hikey_affinst_off(uint32_t afflvl, uint32_t state)
 	return;
 }
 
+static void hikey_affinst_suspend(uint64_t sec_entrypoint,
+				  uint32_t afflvl,
+				  uint32_t state)
+{
+	unsigned long mpidr;
+	unsigned long linear_id;
+
+	/* Get the mpidr for this cpu */
+	mpidr = read_mpidr_el1();
+	linear_id = platform_get_core_pos(mpidr);
+
+	/* Determine if any platform actions need to be executed */
+	if (hikey_do_plat_actions(afflvl, state) == -EAGAIN)
+		return;
+
+	psci_program_mailbox(mpidr, sec_entrypoint);
+
+	/* Set cpu entry point */
+	mmio_write_32(ACPU_SC_CPUx_RVBARADDR(linear_id),
+			(unsigned int)(sec_entrypoint >> 2));
+
+	/* Cluster is to be turned off, so disable coherency */
+	if (afflvl > MPIDR_AFFLVL0)
+		cci_disable_cluster_coherency(mpidr);
+}
+
+static void hikey_affinst_suspend_finish(uint32_t afflvl,
+					 uint32_t state)
+{
+	unsigned long mpidr;
+	unsigned long linear_id;
+
+	/* Get the mpidr for this cpu */
+	mpidr = read_mpidr_el1();
+	linear_id = platform_get_core_pos(mpidr);
+
+	if (afflvl != MPIDR_AFFLVL0)
+		cci_enable_cluster_coherency(mpidr);
+
+	/* Enable the gic cpu interface */
+	arm_gic_cpuif_setup();
+
+	/* Juno todo: Is this setup only needed after a cold boot? */
+	arm_gic_pcpu_distif_setup();
+
+	/* Clear the mailbox for this cpu. */
+	psci_program_mailbox(mpidr, 0x0);
+
+	/* cleanup cpu entry point */
+	mmio_write_32(ACPU_SC_CPUx_RVBARADDR(linear_id), 0x0);
+}
+
 static void __dead2 hikey_system_reset(void)
 {
 	VERBOSE("%s: reset system\n", __func__);
@@ -310,8 +362,8 @@ static const plat_pm_ops_t hikey_ops = {
 	.affinst_on_finish	= hikey_affinst_on_finish,
 	.affinst_off		= hikey_affinst_off,
 	.affinst_standby	= NULL,
-	.affinst_suspend	= NULL,
-	.affinst_suspend_finish	= NULL,
+	.affinst_suspend	= hikey_affinst_suspend,
+	.affinst_suspend_finish	= hikey_affinst_suspend_finish,
 	.system_off		= NULL,
 	.system_reset		= hikey_system_reset,
 };
