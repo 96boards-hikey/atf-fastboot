@@ -41,6 +41,12 @@
 #define DISABLE6_XO_CLK_RF2			(1 << 4)
 
 #define VERSION_REG				0x000
+#define ENABLE2_LDO1_8				0x029
+#define DISABLE2_LDO1_8				0x02a
+#define ONOFF_STATUS2_LDO1_8			0x02b
+#define ENABLE3_LDO9_16				0x02c
+#define DISABLE3_LDO9_16			0x02d
+#define ONOFF_STATUS3_LDO9_16			0x02e
 #define PERI_EN_MARK				0x040
 #define BUCK2_REG1				0x04a
 #define BUCK2_REG5				0x04e
@@ -56,6 +62,8 @@
 #define CLK_TOP4				0x067
 #define VSET_BUCK2_ADJ				0x06d
 #define VSET_BUCK3_ADJ				0x06e
+#define LDO7_REG_ADJ				0x078
+#define LDO10_REG_ADJ				0x07b
 #define LDO19_REG_ADJ				0x084
 #define LDO20_REG_ADJ				0x085
 #define DR_LED_CTRL				0x098

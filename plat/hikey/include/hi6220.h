@@ -46,6 +46,7 @@
 #define MEDIA_SUBSYS_CTRL5			(MEDIA_CTRL_BASE + 0x51c)
 
 #define MMC0_BASE				0xf723d000
+#define MMC1_BASE				0xf723e000
 
 #define PMUSSI_BASE				0xf8000000
 
