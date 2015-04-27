@@ -181,6 +181,7 @@ void bl1_platform_setup(void)
 	io_setup();
 	get_partition();
 	if (query_boot_mode()) {
+		NOTICE("Enter fastboot mode...\n");
 		flush_loader_image();
 		usb_download();
 	}
