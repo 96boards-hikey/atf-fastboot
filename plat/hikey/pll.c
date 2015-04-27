@@ -1197,7 +1197,8 @@ void hi6220_pll_init(void)
 	reset_mmc0_clk();
 	init_media_clk();
 
+	dsb();
+
 	init_mmc1_pll();
 	reset_mmc1_clk();
-
 }
