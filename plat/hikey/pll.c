@@ -39,8 +39,6 @@
 #include <platform_def.h>
 #include <sp804_timer.h>
 
-//#define DDR800
-
 static void init_pll(void)
 {
 	unsigned int data;
@@ -228,7 +226,7 @@ static int cat_533mhz_800mhz(void)
 
 	data = mmio_read_32((0xf712c000 + 0x1c8));
 	data &= 0xfffff0f0;
-	data |= 0x100f01;
+	data |= 0x100f0f;
 	mmio_write_32((0xf712c000 + 0x1c8), data);
 
 	for (i = 0; i < 0x20; i++) {
@@ -250,14 +248,8 @@ static int cat_533mhz_800mhz(void)
 
 
 		mmio_write_32((0xf712c000 + 0x004), 0x8000);
-		dsb();
-		mdelay(1);
 		mmio_write_32((0xf712c000 + 0x004), 0x0);
-		dsb();
-		mdelay(1);
 		mmio_write_32((0xf712c000 + 0x004), 0x801);
-		dsb();
-		mdelay(1);
 		do {
 			data = mmio_read_32((0xf712c000 + 0x004));
 		} while (data & 1);
@@ -302,36 +294,24 @@ static void ddrx_rdet(void)
 
 	data = mmio_read_32((0xf712c000 + 0x0d0));
 	data &= 0xf800ffff;
-	data |= 0x8a0000;
+	data |= 0x8f0000;
 	mmio_write_32((0xf712c000 + 0x0d0), data);
-	dsb();
-	mdelay(1);
 
 	data = mmio_read_32((0xf712c000 + 0x0dc));
 	data &= 0xfffffff0;
-	data |= 0x4;
+	data |= 0xf;
 	mmio_write_32((0xf712c000 + 0x0dc), data);
-	dsb();
-	mdelay(1);
 
 
 	data = mmio_read_32((0xf712c000 + 0x070));
 	data |= 0x80000;
 	mmio_write_32((0xf712c000 + 0x070), data);
-	dsb();
-	mdelay(10);
 	data = mmio_read_32((0xf712c000 + 0x070));
 	data &= 0xfff7ffff;
 	mmio_write_32((0xf712c000 + 0x070), data);
-	dsb();
-	mdelay(10);
 
 	mmio_write_32((0xf712c000 + 0x004), 0x8000);
-	dsb();
-	mdelay(10);
 	mmio_write_32((0xf712c000 + 0x004), 0);
-	dsb();
-	mdelay(10);
 
 	data = mmio_read_32((0xf712c000 + 0x0d0));
 	data &= ~0xf0000000;
@@ -339,7 +319,6 @@ static void ddrx_rdet(void)
 	mmio_write_32((0xf712c000 + 0x0d0), data);
 
 	mmio_write_32((0xf712c000 + 0x004), 0x101);
-	dsb();
 	do {
 		data = mmio_read_32((0xf712c000 + 0x004));
 	} while (!(data & 1));
@@ -347,7 +326,6 @@ static void ddrx_rdet(void)
 	if (data & 0x100)
 		tf_printf("WARN:    " "rdet lbs fail\n");
 
-	mdelay(10);
 	bdl[0] = mmio_read_32((0xf712c000 + 0x22c)) & 0x7f;
 	bdl[1] = mmio_read_32((0xf712c000 + 0x2ac)) & 0x7f;
 	bdl[2] = mmio_read_32((0xf712c000 + 0x32c)) & 0x7f;
@@ -374,23 +352,18 @@ static void ddrx_rdet(void)
 		data = mmio_read_32((0xf712c000 + 0x070));
 		data |= 0x80000;
 		mmio_write_32((0xf712c000 + 0x070), data);
-		dsb();
 		data = mmio_read_32((0xf712c000 + 0x070));
 		data &= 0xfff7ffff;
 		mmio_write_32((0xf712c000 + 0x070), data);
 
 		mmio_write_32((0xf712c000 + 0x004), 0x8000);
-		dsb();
-		mdelay(1);
 		mmio_write_32((0xf712c000 + 0x004), 0);
 
 		data = mmio_read_32((0xf712c000 + 0x0d0));
 		data &= ~0xf0000000;
 		data |= 0x40000000;
 		mmio_write_32((0xf712c000 + 0x0d0), data);
-		dsb();
 		mmio_write_32((0xf712c000 + 0x004), 0x101);
-		dsb();
 		do {
 			data = mmio_read_32((0xf712c000 + 0x004));
 		} while (data & 1);
@@ -401,8 +374,6 @@ static void ddrx_rdet(void)
 			tf_printf("INFO:    " "rdet ds fail\n");
 			mmio_write_32((0xf712c000 + 0x008), 0x100);
 		}
-		dsb();
-		mdelay(10);
 		bdl[0]++;
 		bdl[1]++;
 		bdl[2]++;
@@ -415,15 +386,12 @@ static void ddrx_rdet(void)
 	mmio_write_32((0xf712c000 + 0x0d0), data);
 
 	mmio_write_32((0xf712c000 + 0x004), 0x101);
-	dsb();
 	do {
 		data = mmio_read_32((0xf712c000 + 0x004));
 	} while (data & 1);
 	data = mmio_read_32((0xf712c000 + 0x008));
 	if (data & 0x100)
 		tf_printf("INFO:    " "rdet rbs av fail\n");
-	dsb();
-	mdelay(10);
 }
 
 static void ddrx_wdet(void)
@@ -433,7 +401,7 @@ static void ddrx_wdet(void)
 
 	data = mmio_read_32((0xf712c000 + 0x0d0));
 	data &= ~0xf;
-	data |= 0xa;
+	data |= 0xf;
 	mmio_write_32((0xf712c000 + 0x0d0), data);
 
 	data = mmio_read_32((0xf712c000 + 0x070));
@@ -450,14 +418,12 @@ static void ddrx_wdet(void)
 	data |= 0x8000;
 	mmio_write_32((0xf712c000 + 0x0d0), data);
 	mmio_write_32((0xf712c000 + 0x004), 0x201);
-	dsb();
 	do {
 		data = mmio_read_32((0xf712c000 + 0x004));
 	} while (data & 1);
 	data = mmio_read_32((0xf712c000 + 0x008));
 	if (data & 0x200)
 		tf_printf("INFO:    " "wdet lbs fail\n");
-	mdelay(10);
 
 	dq[0] = mmio_read_32((0xf712c000 + 0x234)) & 0x1f00;
 	dq[1] = mmio_read_32((0xf712c000 + 0x2b4)) & 0x1f00;
@@ -532,10 +498,8 @@ static void ddrx_wdet(void)
 	data = mmio_read_32((0xf712c000 + 0x008));
 	if (data & 0x200)
 		tf_printf("INFO:    " "wdet rbs av fail\n");
-	mdelay(10);
 }
 
-#ifndef DDR800
 static void set_ddrc_533mhz(void)
 {
 	unsigned int data;
@@ -550,8 +514,6 @@ static void set_ddrc_533mhz(void)
 	mmio_write_32((0xf7030000 + 0x240), 0x5ffff);
 	mmio_write_32((0xf7030000 + 0x344), 0xf5ff);
 	mmio_write_32((0xf712c000 + 0x00c), 0x400);
-	dsb();
-	udelay(100);
 	mmio_write_32((0xf712c000 + 0x018), 0x7);
 	mmio_write_32((0xf712c000 + 0x090), 0x6400000);
 	mmio_write_32((0xf712c000 + 0x258), 0x640);
@@ -615,9 +577,7 @@ static void set_ddrc_533mhz(void)
 	}
 	tf_printf("NOTICE:  " "succeed to init lpddr3 rank0 dram phy\n");
 }
-#endif
 
-#ifdef DDR800
 static void set_ddrc_800mhz(void)
 {
 	unsigned int data;
@@ -627,16 +587,12 @@ static void set_ddrc_800mhz(void)
 	data = mmio_read_32((0xf7032000 + 0x104));
 	data &= 0xfffffcff;
 	mmio_write_32((0xf7032000 + 0x104), data);
-	dsb();
-	mdelay(10);
 
 	mmio_write_32((0xf7030000 + 0x050), 0x30);
 	mmio_write_32((0xf7030000 + 0x240), 0x5ffff);
 	mmio_write_32((0xf7030000 + 0x344), 0xf5ff);
-	dsb();
 	mmio_write_32((0xf712c000 + 0x00c), 0x400);
 	mmio_write_32((0xf712c000 + 0x018), 0x7);
-	dsb();
 	mmio_write_32((0xf712c000 + 0x090), 0x5400000);
 	mmio_write_32((0xf712c000 + 0x258), 0x540);
 	mmio_write_32((0xf712c000 + 0x2d8), 0x540);
@@ -686,11 +642,9 @@ static void set_ddrc_800mhz(void)
 	mmio_write_32((0xf712c000 + 0x370), 0x3);
 	mmio_write_32((0xf712c000 + 0x3f0), 0x3);
 	mmio_write_32((0xf712c000 + 0x048), 0xd0420900);
-	dsb();
 
 	mmio_write_32((0xf7128000 + 0x040), 0x2001);
 	mmio_write_32((0xf712c000 + 0x004), 0x140f);
-	dsb();
 	do {
 		data = mmio_read_32((0xf712c000 + 0x004));
 	} while (data & 1);
@@ -700,31 +654,23 @@ static void set_ddrc_800mhz(void)
 		return;
 	}
 }
-#endif
 
-static void ddrc_common_init(void)
+static void ddrc_common_init(int ddr800)
 {
 	unsigned int data;
 
 	mmio_write_32((0xf7120000 + 0x020), 0x1);
 	mmio_write_32((0xf7120000 + 0x100), 0x1700);
 	mmio_write_32((0xf7120000 + 0x104), 0x71040004);
-	dsb();
 	mmio_write_32((0xf7121400 + 0x104), 0xf);
-	dsb();
 	mmio_write_32((0xf7121800 + 0x104), 0xf);
 	mmio_write_32((0xf7121800 + 0x104), 0xf);
-	dsb();
 	mmio_write_32((0xf7121c00 + 0x104), 0xf);
-	dsb();
 	mmio_write_32((0xf7122000 + 0x104), 0xf);
-	dsb();
 	mmio_write_32((0xf7128000 + 0x02c), 0x6);
 	mmio_write_32((0xf7128000 + 0x020), 0x1);
 	mmio_write_32((0xf7128000 + 0x028), 0x310201);
-	dsb();
 	mmio_write_32((0xf712c000 + 0x1e4), 0xfe007600);
-	dsb();
 	mmio_write_32((0xf7128000 + 0x01c), 0xaf001);
 
 
@@ -733,20 +679,16 @@ static void ddrc_common_init(void)
 	mmio_write_32((0xf7128000 + 0x280), data);
 	mmio_write_32((0xf7128000 + 0x244), 0x3);
 
-#ifdef DDR800
-	mmio_write_32((0xf7128000 + 0x240), 167 * 400000 / 1024);
-#else
-	mmio_write_32((0xf7128000 + 0x240), 167 * 533000 / 1024);
-#endif
+	if (ddr800)
+		mmio_write_32((0xf7128000 + 0x240), 167 * 400000 / 1024);
+	else
+		mmio_write_32((0xf7128000 + 0x240), 167 * 533000 / 1024);
 
-	dsb();
 	data = mmio_read_32((0xf712c000 + 0x080));
 	data &= 0xffff;
 	data |= 0x4002000;
 	mmio_write_32((0xf712c000 + 0x080), data);
-	dsb();
 	mmio_write_32((0xf7128000 + 0x000), 0x0);
-	dsb();
 	do {
 		data = mmio_read_32((0xf7128000 + 0x294));
 	} while (data & 1);
@@ -841,42 +783,45 @@ static int detect_ddr_chip_info(void)
 	return data;
 }
 
-static int lpddr3_freq_init(void)
+int lpddr3_freq_init(int ddr800)
 {
 	unsigned int data;
 
-#ifdef DDR800
-	set_ddrc_800mhz();
-	tf_printf("INFO:    " "%s, set ddrc 800mhz\n", __func__);
-#else
-	set_ddrc_533mhz();
-	tf_printf("INFO:    " "%s, set ddrc 533mhz\n", __func__);
-#endif
+	if (ddr800) {
+		set_ddrc_800mhz();
+		tf_printf("INFO:    " "%s, set ddrc 800mhz\n", __func__);
+	} else {
+		set_ddrc_533mhz();
+		tf_printf("INFO:    " "%s, set ddrc 533mhz\n", __func__);
+	}
 
 	data = cat_533mhz_800mhz();
 	if (data)
 		tf_printf("NOTICE:  " "fail to set eye diagram\n");
 
 	mmio_write_32((0xf712c000 + 0x004), 0xf1);
-	mmio_write_32((0xf7128000 + 0x050), 0x100123);
+	if (ddr800)
+		mmio_write_32((0xf7128000 + 0x050), 0x100023);
+	else
+		mmio_write_32((0xf7128000 + 0x050), 0x100123);
 	mmio_write_32((0xf7128000 + 0x060), 0x133);
 	mmio_write_32((0xf7128000 + 0x064), 0x133);
 	mmio_write_32((0xf7128000 + 0x200), 0xa1000);
-#ifdef DDR800
-	mmio_write_32((0xf7128000 + 0x100), 0x755a9d12);
-	mmio_write_32((0xf7128000 + 0x104), 0x1753b055);
-	mmio_write_32((0xf7128000 + 0x108), 0x7401505f);
-	mmio_write_32((0xf7128000 + 0x10c), 0x578ca244);
-	mmio_write_32((0xf7128000 + 0x110), 0x10700000);
-	mmio_write_32((0xf7128000 + 0x114), 0x13141306);
-#else
-	mmio_write_32((0xf7128000 + 0x100), 0xb77b6718);
-	mmio_write_32((0xf7128000 + 0x104), 0x1e82a071);
-	mmio_write_32((0xf7128000 + 0x108), 0x9501c07e);
-	mmio_write_32((0xf7128000 + 0x10c), 0xaf50c255);
-	mmio_write_32((0xf7128000 + 0x110), 0x10b00000);
-	mmio_write_32((0xf7128000 + 0x114), 0x13181908);
-#endif
+	if (ddr800) {
+		mmio_write_32((0xf7128000 + 0x100), 0x755a9d12);
+		mmio_write_32((0xf7128000 + 0x104), 0x1753b055);
+		mmio_write_32((0xf7128000 + 0x108), 0x7401505f);
+		mmio_write_32((0xf7128000 + 0x10c), 0x578ca244);
+		mmio_write_32((0xf7128000 + 0x110), 0x10700000);
+		mmio_write_32((0xf7128000 + 0x114), 0x13141306);
+	} else {
+		mmio_write_32((0xf7128000 + 0x100), 0xb77b6718);
+		mmio_write_32((0xf7128000 + 0x104), 0x1e82a071);
+		mmio_write_32((0xf7128000 + 0x108), 0x9501c07e);
+		mmio_write_32((0xf7128000 + 0x10c), 0xaf50c255);
+		mmio_write_32((0xf7128000 + 0x110), 0x10b00000);
+		mmio_write_32((0xf7128000 + 0x114), 0x13181908);
+	}
 	mmio_write_32((0xf7128000 + 0x118), 0x44);
 	do {
 		data = mmio_read_32((0xf712c000 + 0x004));
@@ -884,10 +829,10 @@ static int lpddr3_freq_init(void)
 
 	data = mmio_read_32((0xf712c000 + 0x008));
 	if (data & 0x7fe) {
-		tf_printf("NOTICE:  " "fail to init ddr3 rank0 in 533MHz\n");
+		tf_printf("NOTICE:  " "fail to init ddr3 rank0\n");
 		return -14;
 	}
-	tf_printf("INFO:    " "init ddr3 rank0 in 533MHz\n");
+	tf_printf("INFO:    " "init ddr3 rank0\n");
 	ddrx_rdet();
 	ddrx_wdet();
 
@@ -901,9 +846,9 @@ static int lpddr3_freq_init(void)
 
 	data = mmio_read_32((0xf712c000 + 0x008));
 	if (data & 0x7fe)
-		tf_printf("NOTICE:  " "ddr3 rank1 init faile in 533MHz\n");
+		tf_printf("NOTICE:  " "ddr3 rank1 init failure\n");
 	else
-		tf_printf("INFO:    " "ddr3 rank1 init pass in 533MHz\n");
+		tf_printf("INFO:    " "ddr3 rank1 init pass\n");
 
 	data = mmio_read_32((0xf712c000 + 0x048));
 	data &= ~0xf;
@@ -911,7 +856,7 @@ static int lpddr3_freq_init(void)
 	return 0;
 }
 
-static void init_ddr(void)
+static void init_ddr(int ddr800)
 {
 	unsigned int data;
 	int ret;
@@ -920,15 +865,11 @@ static void init_ddr(void)
 	data = mmio_read_32((0xf7032000 + 0x030));
 	data |= 1;
 	mmio_write_32((0xf7032000 + 0x030), data);
-	dsb();
-	mdelay(10);
 	data = mmio_read_32((0xf7032000 + 0x010));
 	data |= 1;
 	mmio_write_32((0xf7032000 + 0x010), data);
-
-	dsb();
-	mdelay(10);
-
+	
+	udelay(100);
 	do {
 		data = mmio_read_32((0xf7032000 + 0x030));
 		data &= 3 << 28;
@@ -938,26 +879,9 @@ static void init_ddr(void)
 		data &= 3 << 28;
 	} while (data != (3 << 28));
 
-	ret = lpddr3_freq_init();
+	ret = lpddr3_freq_init(ddr800);
 	if (ret)
 		return;
-
-	ddrc_common_init();
-	dienum_det_and_rowcol_cfg();
-	detect_ddr_chip_info();
-
-
-#ifdef DDR800
-	data = mmio_read_32(0xf7032000 + 0x010);
-	data &= ~0x1;
-	mmio_write_32(0xf7032000 + 0x010, data);
-	data = mmio_read_32(0xf7032000 + 0x010);
-#else
-	data = mmio_read_32((0xf7032000 + 0x030));
-	data &= ~0x1;
-	mmio_write_32((0xf7032000 + 0x030), data);
-	data = mmio_read_32((0xf7032000 + 0x030));
-#endif
 }
 
 static void init_ddrc_qos(void)
@@ -1178,12 +1102,38 @@ static void reset_mmc1_clk(void)
 	} while (data & PERI_RST0_MMC1);
 }
 
+static void ddr_phy_reset(void)
+{
+	mmio_write_32(0xf7030340, 0xa000);
+	mmio_write_32(0xf7030344, 0xa000);
+}
+
 void hi6220_pll_init(void)
 {
+	uint32_t data;
+
 	init_pll();
 	init_freq();
-	init_ddr();
-	init_ddrc_qos();
+
+	/*
+	 * Init DDR with 533MHz. Otherwise, DDR initialization
+	 * may fail on 800MHz on some boards.
+	 */
+	ddr_phy_reset();
+	init_ddr(0);
+	/* Init DDR with 800MHz. */
+	ddr_phy_reset();
+	init_ddr(1);
+
+
+	ddrc_common_init(1);
+	dienum_det_and_rowcol_cfg();
+	detect_ddr_chip_info();
+
+	data = mmio_read_32(0xf7032000 + 0x010);
+	data &= ~0x1;
+	mmio_write_32(0xf7032000 + 0x010, data);
+	data = mmio_read_32(0xf7032000 + 0x010);
 
 	/*
 	 * Test memory access. Do not use address 0x0 because the compiler
@@ -1192,6 +1142,7 @@ void hi6220_pll_init(void)
 	 */
 	mmio_write_32(0x4, 0xa5a55a5a);
 	INFO("ddr test value:0x%x\n", mmio_read_32(0x4));
+	init_ddrc_qos();
 
 	init_mmc0_pll();
 	reset_mmc0_clk();
