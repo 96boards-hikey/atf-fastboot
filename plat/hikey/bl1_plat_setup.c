@@ -180,6 +180,7 @@ void bl1_platform_setup(void)
 
 	io_setup();
 	get_partition();
+	INFO("Hisilicon HiKey platform is initialized\n");
 	if (query_boot_mode()) {
 		flush_loader_image();
 		usb_download();
@@ -255,11 +256,16 @@ static void hikey_hi6553_init(void)
 	hi6553_write_8(BUCK2_REG1, 0x4f);
 	hi6553_write_8(BUCK2_REG5, 0x99);
 	hi6553_write_8(BUCK2_REG6, 0x45);
+	mdelay(1);
+	hi6553_write_8(VSET_BUCK2_ADJ, 0x22);
+	mdelay(1);
 
 	/* configure BUCK3 */
 	hi6553_write_8(BUCK3_REG3, 0x02);
 	hi6553_write_8(BUCK3_REG5, 0x99);
 	hi6553_write_8(BUCK3_REG6, 0x41);
+	hi6553_write_8(VSET_BUCK3_ADJ, 0x02);
+	mdelay(1);
 
 	/* configure BUCK4 */
 	hi6553_write_8(BUCK4_REG2, 0x9a);
