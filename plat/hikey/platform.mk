@@ -74,6 +74,7 @@ BL1_SOURCES		+=	drivers/arm/cci400/cci400.c		\
 
 BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S	\
 				plat/hikey/bl2_plat_setup.c		\
+				plat/hikey/plat_security.c		\
 				plat/hikey/drivers/dw_mmc.c		\
 				plat/hikey/drivers/hi6553.c		\
 				plat/hikey/drivers/hisi_dvfs.c		\

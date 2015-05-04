@@ -75,4 +75,6 @@ extern int plat_get_image_source(const char *image_name,
 extern void plat_gic_init(void);
 extern void usb_download(void);
 
+void plat_security_setup(void);
+
 #endif /* __HIKEY_PRIVATE_H__ */
