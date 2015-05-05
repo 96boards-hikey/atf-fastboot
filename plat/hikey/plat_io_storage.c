@@ -508,6 +508,8 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 					entries[i].flag);
 				return IO_NOT_SUPPORTED;
 			}
+			if (entries[i].count == 0)
+				continue;
 			length = entries[i].count * 512;
 			offset = MMC_BASE + entries[i].start * 512;
 			VERBOSE("i:%d, start:%x, count:%x\n",
