@@ -182,6 +182,7 @@ void bl1_platform_setup(void)
 	get_partition();
 	INFO("Hisilicon HiKey platform is initialized\n");
 	if (query_boot_mode()) {
+		NOTICE("Enter fastboot mode...\n");
 		flush_loader_image();
 		usb_download();
 	}
