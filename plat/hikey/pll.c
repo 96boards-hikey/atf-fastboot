@@ -218,7 +218,7 @@ static void init_freq(void)
 	mmio_write_32((0xf7032000 + 0x110), data);
 }
 
-static int cat_533mhz_800mhz(void)
+int cat_533mhz_800mhz(void)
 {
 	unsigned int data, i;
 	unsigned int bdl[5];
