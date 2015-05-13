@@ -195,7 +195,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
  ******************************************************************************/
 void bl2_platform_setup(void)
 {
-	return;
+	plat_security_setup();
 }
 
 /* Flush the TF params and the TF plat params */
