@@ -37,6 +37,7 @@
 static inline void mmio_write_8(uintptr_t addr, uint8_t value)
 {
 	dsb();
+	isb();
 	*(volatile uint8_t*)addr = value;
 }
 
@@ -46,12 +47,14 @@ static inline uint8_t mmio_read_8(uintptr_t addr)
 
 	val = *(volatile uint8_t*)addr;
 	dsb();
+	isb();
 	return val;
 }
 
 static inline void mmio_write_32(uintptr_t addr, uint32_t value)
 {
 	dsb();
+	isb();
 	*(volatile uint32_t*)addr = value;
 }
 
@@ -61,12 +64,14 @@ static inline uint32_t mmio_read_32(uintptr_t addr)
 
 	val = *(volatile uint32_t*)addr;
 	dsb();
+	isb();
 	return val;
 }
 
 static inline void mmio_write_64(uintptr_t addr, uint64_t value)
 {
 	dsb();
+	isb();
 	*(volatile uint64_t*)addr = value;
 }
 
@@ -76,6 +81,7 @@ static inline uint64_t mmio_read_64(uintptr_t addr)
 
 	val = *(volatile uint64_t*)addr;
 	dsb();
+	isb();
 	return val;
 }
 

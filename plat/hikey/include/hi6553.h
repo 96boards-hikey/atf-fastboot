@@ -47,6 +47,9 @@
 #define ENABLE3_LDO9_16				0x02c
 #define DISABLE3_LDO9_16			0x02d
 #define ONOFF_STATUS3_LDO9_16			0x02e
+#define ENABLE4_LDO17_22			0x02f
+#define DISABLE4_LDO17_22			0x030
+#define ONOFF_STATUS4_LDO17_22			0x031
 #define PERI_EN_MARK				0x040
 #define BUCK2_REG1				0x04a
 #define BUCK2_REG5				0x04e
@@ -64,8 +67,10 @@
 #define VSET_BUCK3_ADJ				0x06e
 #define LDO7_REG_ADJ				0x078
 #define LDO10_REG_ADJ				0x07b
+#define LDO15_REG_ADJ				0x080
 #define LDO19_REG_ADJ				0x084
 #define LDO20_REG_ADJ				0x085
+#define LDO22_REG_ADJ				0x087
 #define DR_LED_CTRL				0x098
 #define DR_OUT_CTRL				0x099
 #define DR3_ISET				0x09a
