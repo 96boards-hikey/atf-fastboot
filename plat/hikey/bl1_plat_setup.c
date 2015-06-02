@@ -296,6 +296,18 @@ static void hikey_hi6553_init(void)
 	/* enable LDO10 */
 	hi6553_write_8(ENABLE3_LDO9_16, 1 << 1);
 	mdelay(5);
+	/* enable LDO15 */
+	data = hi6553_read_8(LDO15_REG_ADJ);
+	data = (data & 0xf8) | 0x4;
+	hi6553_write_8(LDO15_REG_ADJ, data);
+	hi6553_write_8(ENABLE3_LDO9_16, 1 << 6);
+	mdelay(5);
+	/* enable LDO22 */
+	data = hi6553_read_8(LDO22_REG_ADJ);
+	data = (data & 0xf8) | 0x7;
+	hi6553_write_8(LDO22_REG_ADJ, data);
+	hi6553_write_8(ENABLE4_LDO17_22, 1 << 5);
+	mdelay(5);
 
 	/* select 32.764KHz */
 	hi6553_write_8(CLK19M2_600_586_EN, 0x01);
