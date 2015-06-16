@@ -166,6 +166,18 @@ static void hikey_sd_init(void)
 		INFO("SD Card has been detected.\n");
 }
 
+static void hikey_jumper_init(void)
+{
+	int ret;
+	/* configure GPIO24 as nopull */
+	mmio_write_32(0xf7010950, 0);
+	/* configure GPIO24 as gpio */
+	mmio_write_32(0xf7010140, 0);
+	gpio_direction_input(24);
+	ret = gpio_get_value(24);
+	VERBOSE("Jumper value:%d\n", ret);
+}
+
 /*******************************************************************************
  * Function which will perform any remaining platform-specific setup that can
  * occur after the MMU and data cache have been enabled.
@@ -177,6 +189,7 @@ void bl1_platform_setup(void)
 	hikey_hi6553_init();
 	hi6220_pll_init();
 	hikey_sd_init();
+	hikey_jumper_init();
 
 	io_setup();
 	get_partition();
