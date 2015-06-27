@@ -92,3 +92,5 @@ BL31_SOURCES		+=	drivers/arm/cci400/cci400.c		\
 				plat/hikey/drivers/sp804_timer.c	\
 				plat/hikey/plat_pm.c			\
 				plat/hikey/plat_topology.c
+
+NEED_BL30		:=	yes
