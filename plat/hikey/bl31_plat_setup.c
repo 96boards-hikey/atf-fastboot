@@ -39,6 +39,7 @@
 #include <mmio.h>
 #include <platform.h>
 #include <stddef.h>
+#include <hi6220_regs_ao.h>
 #include "hikey_def.h"
 #include "hikey_private.h"
 
@@ -128,6 +129,15 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	bl33_ep_info = *from_bl2->bl33_ep_info;
 }
 
+static void init_rtc(void)
+{
+	uint32_t data;
+
+	data = mmio_read_32(AO_SC_PERIPH_CLKEN4);
+	data |= AO_SC_PERIPH_RSTDIS4_RESET_RTC0_N;
+	mmio_write_32(AO_SC_PERIPH_CLKEN4, data);
+}
+
 /*******************************************************************************
  * Initialize the GIC.
  ******************************************************************************/
@@ -136,6 +146,8 @@ void bl31_platform_setup(void)
 	/* Initialize the gic cpu and distributor interfaces */
 	plat_gic_init();
 	arm_gic_setup();
+
+	init_rtc();
 }
 
 /*******************************************************************************
