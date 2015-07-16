@@ -80,10 +80,11 @@
  * PL011 related constants
  ******************************************************************************/
 #define PL011_UART0_BASE		0xF8015000
+#define PL011_UART3_BASE		0xF7113000
 
 #define PL011_BAUDRATE			115200
 
-#define PL011_UART0_CLK_IN_HZ		19200000
+#define PL011_UART_CLK_IN_HZ		19200000
 
 /*******************************************************************************
  * CCI-400 related constants
