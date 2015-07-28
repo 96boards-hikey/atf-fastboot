@@ -110,7 +110,7 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 			       void *plat_params_from_bl2)
 {
 	/* Initialize the console to provide early debug support */
-	console_init(PL011_UART3_BASE, PL011_UART_CLK_IN_HZ, PL011_BAUDRATE);
+	console_init(CONSOLE_BASE, PL011_UART_CLK_IN_HZ, PL011_BAUDRATE);
 
 	/*
 	 * Initialise the CCI-400 driver for BL31 so that it is accessible after

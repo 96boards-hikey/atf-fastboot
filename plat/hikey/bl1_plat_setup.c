@@ -87,7 +87,7 @@ void bl1_early_platform_setup(void)
 	const size_t bl1_size = BL1_RAM_LIMIT - BL1_RAM_BASE;
 
 	/* Initialize the console to provide early debug support */
-	console_init(PL011_UART3_BASE, PL011_UART_CLK_IN_HZ, PL011_BAUDRATE);
+	console_init(CONSOLE_BASE, PL011_UART_CLK_IN_HZ, PL011_BAUDRATE);
 
 	hi6220_timer_init();
 	/*
