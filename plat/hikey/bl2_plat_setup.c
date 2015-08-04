@@ -176,7 +176,7 @@ void init_boardid(void)
 void bl2_early_platform_setup(meminfo_t *mem_layout)
 {
 	/* Initialize the console to provide early debug support */
-	console_init(PL011_UART3_BASE, PL011_UART_CLK_IN_HZ, PL011_BAUDRATE);
+	console_init(CONSOLE_BASE, PL011_UART_CLK_IN_HZ, PL011_BAUDRATE);
 
 	/* Setup the BL2 memory layout */
 	bl2_tzram_layout = *mem_layout;
