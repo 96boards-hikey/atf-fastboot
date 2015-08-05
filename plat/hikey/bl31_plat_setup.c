@@ -36,10 +36,13 @@
 #include <bl_common.h>
 #include <cci400.h>
 #include <console.h>
+#include <hisi_ipc.h>
+#include <hisi_pwrc.h>
 #include <mmio.h>
 #include <platform.h>
 #include <stddef.h>
 #include <hi6220_regs_ao.h>
+
 #include "hikey_def.h"
 #include "hikey_private.h"
 
@@ -148,6 +151,8 @@ void bl31_platform_setup(void)
 	arm_gic_setup();
 
 	init_rtc();
+	hisi_ipc_init();
+	hisi_pwrc_setup();
 }
 
 /*******************************************************************************
