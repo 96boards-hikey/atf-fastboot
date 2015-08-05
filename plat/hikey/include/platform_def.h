@@ -76,9 +76,12 @@
 
 #define PLATFORM_CACHE_LINE_SIZE	64
 #define PLATFORM_CLUSTER_COUNT		2
+#define PLATFORM_CORE_COUNT_PER_CLUSTER	4
 #define PLATFORM_CORE_COUNT             8
 #define PLATFORM_NUM_AFFS		(PLATFORM_CLUSTER_COUNT + \
 					 PLATFORM_CORE_COUNT)
+#define PLATFORM_MAX_AFFLVL             MPIDR_AFFLVL1
+
 #define MAX_IO_DEVICES			3
 #define MAX_IO_HANDLES			4
 
@@ -180,11 +183,15 @@
  ******************************************************************************/
 #define ADDR_SPACE_SIZE			(1ull << 32)
 
-#if IMAGE_BL1 || IMAGE_BL31 || IMAGE_BL32
+#if IMAGE_BL1 || IMAGE_BL32
 # define MAX_XLAT_TABLES		3
 #endif
 
 #if IMAGE_BL2
+# define MAX_XLAT_TABLES		4
+#endif
+
+#if IMAGE_BL31
 # define MAX_XLAT_TABLES		4
 #endif
 
