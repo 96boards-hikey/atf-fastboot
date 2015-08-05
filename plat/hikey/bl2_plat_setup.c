@@ -165,6 +165,9 @@ void init_boardid(void)
 	/* Set board id to sram */
 	mmio_write_32(MEMORY_AXI_BOARD_ID_ADDR, 0x2b);
 	INFO("[BDID] [%x] board id: 0x2b\n", MEMORY_AXI_BOARD_ID_ADDR);
+
+	mmio_write_32(ACPU_ARM64_FLAGA, 0x1234);
+	mmio_write_32(ACPU_ARM64_FLAGB, 0x5678);
 	return;
 }
 

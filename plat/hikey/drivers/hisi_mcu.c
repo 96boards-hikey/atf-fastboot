@@ -157,7 +157,7 @@ void hisi_mcu_enable_sram(void)
 		      AO_SC_PERIPH_CLKEN4_HCLK_IPC_NS);
 
 	/* set register to enable dvfs which is used by mcu */
-	mmio_write_32(PERI_SC_RESERVED8_ADDR, 0x02000020);
+	mmio_write_32(PERI_SC_RESERVED8_ADDR, 0x0A001022);
 
 	/* mcu mem is powered on, need de-assert reset */
 	mmio_write_32(AO_SC_PERIPH_RSTDIS4,
