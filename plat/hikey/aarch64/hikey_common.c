@@ -87,6 +87,7 @@ static const mmap_region_t hikey_mmap[] = {
 	MAP_DEVICE,
 	MAP_NS_DRAM,
 	MAP_TSP_MEM,
+	MAP_SRAM,
 	{0}
 };
 #endif

@@ -61,23 +61,6 @@ __attribute__ ((section("tzfw_coherent_mem")))
  ******************************************************************************/
 const plat_pm_ops_t *psci_plat_pm_ops;
 
-typedef volatile struct psci_mailbox {
-	unsigned long value
-	__attribute__((__aligned__(CACHE_WRITEBACK_GRANULE)));
-} psci_mailbox_t;
-
-psci_mailbox_t psci_mboxes[PLATFORM_CORE_COUNT];
-
-void psci_program_mailbox(uint64_t mpidr, uint64_t address)
-{
-	uint64_t linear_id;
-
-	linear_id = platform_get_core_pos(mpidr);
-	psci_mboxes[linear_id].value = address;
-	flush_dcache_range((unsigned long)&psci_mboxes[linear_id],
-			   sizeof(unsigned long));
-}
-
 /*******************************************************************************
  * This function is passed an array of pointers to affinity level nodes in the
  * topology tree for an mpidr. It iterates through the nodes to find the highest
@@ -99,6 +82,38 @@ uint32_t psci_find_max_phys_off_afflvl(uint32_t start_afflvl,
 	}
 
 	return max_afflvl;
+}
+
+/*******************************************************************************
+ * This function verifies that the all the other cores in the system have been
+ * turned OFF and the current CPU is the last running CPU in the system.
+ * Returns 1 (true) if the current CPU is the last ON CPU or 0 (false)
+ * otherwise.
+ ******************************************************************************/
+unsigned int psci_is_last_on_cpu(void)
+{
+	unsigned long mpidr = read_mpidr_el1() & MPIDR_AFFINITY_MASK;
+	unsigned int i;
+
+	for (i = psci_aff_limits[MPIDR_AFFLVL0].min;
+			i <= psci_aff_limits[MPIDR_AFFLVL0].max; i++) {
+
+		assert(psci_aff_map[i].level == MPIDR_AFFLVL0);
+
+		if (!(psci_aff_map[i].state & PSCI_AFF_PRESENT))
+			continue;
+
+		if (psci_aff_map[i].mpidr == mpidr) {
+			assert(psci_get_state(&psci_aff_map[i])
+					== PSCI_STATE_ON);
+			continue;
+		}
+
+		if (psci_get_state(&psci_aff_map[i]) != PSCI_STATE_OFF)
+			return 0;
+	}
+
+	return 1;
 }
 
 /*******************************************************************************
