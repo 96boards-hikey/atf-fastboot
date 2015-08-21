@@ -60,6 +60,17 @@ static void init_pll(void)
 		data = mmio_read_32((0xf7800000 + 0x014));
 		data &= 0x007;
 	} while (data != 0x004);
+
+	mmio_write_32(PERI_SC_PERIPH_CTRL14, 0x2101);
+	data = mmio_read_32(PERI_SC_PERIPH_STAT1);
+	mmio_write_32(0xf7032000 + 0x02c, 0x5110103e);
+	data = mmio_read_32(0xf7032000 + 0x050);
+	data |= 1 << 28;
+	mmio_write_32(0xf7032000 + 0x050, data);
+	mmio_write_32(PERI_SC_PERIPH_CTRL14, 0x2101);
+	mdelay(1);
+	data = mmio_read_32(PERI_SC_PERIPH_STAT1);
+	NOTICE("syspll frequency:%dHz\n", data);
 }
 
 static void init_freq(void)
