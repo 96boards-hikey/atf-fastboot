@@ -1189,7 +1189,7 @@ int init_usb(void)
 #define LOCK_STATE_UNLOCKED		1
 #define LOCK_STATE_RELOCKED		2
 
-#define FB_MAX_FILE_SIZE		(128 * 1024 * 1024)
+#define FB_MAX_FILE_SIZE		(500 * 1024 * 1024)
 
 static struct ptentry *flash_ptn = NULL;
 

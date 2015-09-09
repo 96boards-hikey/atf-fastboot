@@ -718,10 +718,6 @@ int mmc0_write(unsigned long mmc_start, size_t size,
 	unsigned int mmc_blk_cnt, offset;
 
 	offset = mmc_start % MMC_BLOCK_SIZE;
-	if (offset) {
-		WARN("The source address isn't aligned with MMC block!\n");
-		return -EFAULT;
-	}
 	mmc_blk_cnt = (size + offset + MMC_BLOCK_SIZE - 1) / MMC_BLOCK_SIZE;
 
 	return write_multi_blocks(mmc_blk_start, mmc_blk_cnt, buffer,

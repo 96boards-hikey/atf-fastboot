@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <debug.h>
 #include <dw_mmc.h>
+#include <fastboot.h>
 #include <io_block.h>
 #include <io_driver.h>
 #include <io_fip.h>
@@ -68,6 +69,9 @@ static uintptr_t fip_dev_handle;
 static const io_dev_connector_t *dw_mmc_dev_con;
 static struct block_ops dw_mmc_ops;
 static uintptr_t emmc_dev_handle;
+
+static uint8_t fill_buf[512]
+__attribute__ ((section("tzfw_coherent_mem")));
 
 static const io_block_spec_t loader_mem_spec = {
 	/* l-loader.bin that contains bl1.bin */
@@ -464,6 +468,100 @@ exit:
 	return result;
 }
 
+static int is_sparse_image(unsigned long img_addr)
+{
+	if (*(uint32_t *)img_addr == SPARSE_HEADER_MAGIC)
+		return 1;
+	return 0;
+}
+
+static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_length)
+{
+	sparse_header_t *header = (sparse_header_t *)img_addr;
+	chunk_header_t *chunk = NULL;
+	struct ptentry *ptn;
+	void *data = (void *)img_addr;
+	uint32_t length, out_blks = 0, out_length = 0;
+	uint32_t fill_value;
+	uint32_t left, count;
+	int i, result;
+
+	ptn = find_ptn(cmdbuf);
+	if (!ptn) {
+		WARN("failed to find partition %s\n", cmdbuf);
+		return IO_FAIL;
+	}
+	length = header->total_blks * header->blk_sz;
+	if (length != ptn->length) {
+		WARN("Unsparsed image length is %d, pentry length is %d.\n",
+			length, ptn->length);
+		return IO_FAIL;
+	}
+
+	data = (void *)((unsigned long)data + header->file_hdr_sz);
+	for (i = 0; i < header->total_chunks; i++) {
+		chunk = (chunk_header_t *)data;
+		data = (void *)((unsigned long)data + sizeof(chunk_header_t));
+
+		switch (chunk->chunk_type) {
+		case CHUNK_TYPE_RAW:
+			length = chunk->chunk_sz * header->blk_sz;
+			WARN("chunk:%d, chunk_sz:%d, blk_sz:%d, length:%d\n",
+				i, chunk->chunk_sz, header->blk_sz, length);
+			result = flush_single_image(NORMAL_EMMC_NAME,
+						    (unsigned long)data,
+						    ptn->start + out_blks, length);
+			if (result < 0)
+				return result;
+			out_blks += length / 512;
+			out_length += length;
+			data = (void *)((unsigned long)data + length);
+			break;
+		case CHUNK_TYPE_FILL:
+			length = chunk->chunk_sz * header->blk_sz;
+			if (chunk->total_sz != (sizeof(unsigned int) + sizeof(chunk_header_t))) {
+				WARN("sparse: bad chunk size\n");
+				return IO_FAIL;
+			}
+			fill_value = *(unsigned int *)data;
+			if (fill_value != 0) {
+				WARN("sparse: filled value shouldn't be zero.\n");
+			}
+			memset(fill_buf, 0, 512);
+			left = length;
+			while (left > 0) {
+				if (left < 512)
+					count = left;
+				else
+					count = 512;
+				result = flush_single_image(NORMAL_EMMC_NAME,
+							    (unsigned long)fill_buf,
+							    ptn->start + out_blks, count);
+				if (result < 0)
+					return result;
+				out_blks += count / 512;
+				out_length += count;
+				data = (void *)((unsigned long)data + count);
+				left = left - count;
+			}
+			break;
+		case CHUNK_TYPE_DONT_CARE:
+			if (chunk->total_sz != sizeof(chunk_header_t)) {
+				WARN("sparse: unmatched chunk size\n");
+				return IO_FAIL;
+			}
+			length = chunk->chunk_sz * header->blk_sz;
+			out_blks += length / 512;
+			out_length += length;
+			break;
+		default:
+			WARN("sparse: unrecognized type %d\n", chunk->chunk_type);
+			break;
+		}
+	}
+	return 0;
+}
+
 /*
  * Flush bios.bin into User Data Area in eMMC
  */
@@ -484,14 +582,18 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 		    !strncmp(cmdbuf, "bios", 4)) {
 			update_fip_spec();
 		}
-		ptn = find_ptn(cmdbuf);
-		if (!ptn) {
-			WARN("failed to find partition %s\n", cmdbuf);
-			return IO_FAIL;
+		if (is_sparse_image(img_addr)) {
+			result = do_unsparse(cmdbuf, img_addr, img_length);
+		} else {
+			ptn = find_ptn(cmdbuf);
+			if (!ptn) {
+				WARN("failed to find partition %s\n", cmdbuf);
+				return IO_FAIL;
+			}
+			img_length = (img_length + 512 - 1) / 512 * 512;
+			result = flush_single_image(NORMAL_EMMC_NAME, img_addr,
+						    ptn->start, img_length);
 		}
-		img_length = (img_length + 512 - 1) / 512 * 512;
-		result = flush_single_image(NORMAL_EMMC_NAME, img_addr,
-					    ptn->start, img_length);
 		break;
 	case IO_SUCCESS:
 		if (strncmp(cmdbuf, "ptable", 6)) {
