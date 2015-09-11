@@ -70,8 +70,8 @@ static const io_dev_connector_t *dw_mmc_dev_con;
 static struct block_ops dw_mmc_ops;
 static uintptr_t emmc_dev_handle;
 
-static uint8_t fill_buf[512]
-__attribute__ ((section("tzfw_coherent_mem")));
+#define SPARSE_FILL_BUFFER_ADDRESS	0x18000000
+#define SPARSE_FILL_BUFFER_SIZE		0x08000000
 
 static const io_block_spec_t loader_mem_spec = {
 	/* l-loader.bin that contains bl1.bin */
@@ -443,24 +443,26 @@ static int flush_single_image(const char *mmc_name, unsigned long img_addr,
 	result = plat_get_image_source(mmc_name, &emmc_dev_handle,
 				       &spec);
 	if (result) {
-		WARN("failed to open emmc user data area\n");
+		NOTICE("failed to open emmc user data area\n");
 		return result;
 	}
 
 	result = io_open(emmc_dev_handle, spec, &img_handle);
 	if (result != IO_SUCCESS) {
-		WARN("Failed to open memmap device\n");
+		NOTICE("Failed to open memmap device\n");
 		return result;
 	}
 
 	result = io_seek(img_handle, IO_SEEK_SET, offset);
-	if (result)
+	if (result) {
+		NOTICE("Failed to seek at offset:0x%x\n", offset);
 		goto exit;
+	}
 
 	result = io_write(img_handle, img_addr, length,
 			  &bytes_read);
 	if ((result != IO_SUCCESS) || (bytes_read < length)) {
-		WARN("Failed to write file (%i)\n", result);
+		NOTICE("Failed to write file (%i)\n", result);
 		goto exit;
 	}
 exit:
@@ -488,12 +490,12 @@ static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_l
 
 	ptn = find_ptn(cmdbuf);
 	if (!ptn) {
-		WARN("failed to find partition %s\n", cmdbuf);
+		NOTICE("failed to find partition %s\n", cmdbuf);
 		return IO_FAIL;
 	}
 	length = header->total_blks * header->blk_sz;
-	if (length != ptn->length) {
-		WARN("Unsparsed image length is %d, pentry length is %d.\n",
+	if (length > ptn->length) {
+		NOTICE("Unsparsed image length is %d, pentry length is %d.\n",
 			length, ptn->length);
 		return IO_FAIL;
 	}
@@ -502,60 +504,63 @@ static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_l
 	for (i = 0; i < header->total_chunks; i++) {
 		chunk = (chunk_header_t *)data;
 		data = (void *)((unsigned long)data + sizeof(chunk_header_t));
+		length = chunk->chunk_sz * header->blk_sz;
 
 		switch (chunk->chunk_type) {
 		case CHUNK_TYPE_RAW:
-			length = chunk->chunk_sz * header->blk_sz;
-			WARN("chunk:%d, chunk_sz:%d, blk_sz:%d, length:%d\n",
-				i, chunk->chunk_sz, header->blk_sz, length);
 			result = flush_single_image(NORMAL_EMMC_NAME,
 						    (unsigned long)data,
-						    ptn->start + out_blks, length);
-			if (result < 0)
+						    ptn->start + out_length, length);
+			if (result < 0) {
+				NOTICE("sparse: failed to flush raw chunk\n");
 				return result;
+			}
 			out_blks += length / 512;
 			out_length += length;
+			/* next chunk is just after the raw data */
 			data = (void *)((unsigned long)data + length);
 			break;
 		case CHUNK_TYPE_FILL:
-			length = chunk->chunk_sz * header->blk_sz;
 			if (chunk->total_sz != (sizeof(unsigned int) + sizeof(chunk_header_t))) {
-				WARN("sparse: bad chunk size\n");
+				NOTICE("sparse: bad chunk size\n");
 				return IO_FAIL;
 			}
 			fill_value = *(unsigned int *)data;
 			if (fill_value != 0) {
-				WARN("sparse: filled value shouldn't be zero.\n");
+				NOTICE("sparse: filled value shouldn't be zero.\n");
 			}
-			memset(fill_buf, 0, 512);
+			memset((void *)SPARSE_FILL_BUFFER_ADDRESS,
+				0, SPARSE_FILL_BUFFER_SIZE);
 			left = length;
 			while (left > 0) {
-				if (left < 512)
+				if (left < SPARSE_FILL_BUFFER_SIZE)
 					count = left;
 				else
-					count = 512;
+					count = SPARSE_FILL_BUFFER_SIZE;
 				result = flush_single_image(NORMAL_EMMC_NAME,
-							    (unsigned long)fill_buf,
-							    ptn->start + out_blks, count);
-				if (result < 0)
+							    SPARSE_FILL_BUFFER_ADDRESS,
+							    ptn->start + out_length, count);
+				if (result < 0) {
+					WARN("sparse: failed to flush fill chunk\n");
 					return result;
+				}
 				out_blks += count / 512;
 				out_length += count;
-				data = (void *)((unsigned long)data + count);
 				left = left - count;
 			}
+			/* next chunk is just after the filled data */
+			data = (void *)((unsigned long)data + sizeof(unsigned int));
 			break;
 		case CHUNK_TYPE_DONT_CARE:
 			if (chunk->total_sz != sizeof(chunk_header_t)) {
-				WARN("sparse: unmatched chunk size\n");
+				NOTICE("sparse: unmatched chunk size\n");
 				return IO_FAIL;
 			}
-			length = chunk->chunk_sz * header->blk_sz;
 			out_blks += length / 512;
 			out_length += length;
 			break;
 		default:
-			WARN("sparse: unrecognized type %d\n", chunk->chunk_type);
+			NOTICE("sparse: unrecognized type 0x%x\n", chunk->chunk_type);
 			break;
 		}
 	}
