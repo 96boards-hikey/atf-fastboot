@@ -1189,7 +1189,7 @@ int init_usb(void)
 #define LOCK_STATE_UNLOCKED		1
 #define LOCK_STATE_RELOCKED		2
 
-#define FB_MAX_FILE_SIZE		(500 * 1024 * 1024)
+#define FB_MAX_FILE_SIZE		(256 * 1024 * 1024)
 
 static struct ptentry *flash_ptn = NULL;
 
@@ -1258,7 +1258,7 @@ static unsigned long strtoul(const char *nptr, char **endptr, int base)
 	return data;
 }
 
-#define FB_DOWNLOAD_BASE	0x00400000
+#define FB_DOWNLOAD_BASE	0x20000000
 
 static unsigned long fb_download_base, fb_download_size;
 
