@@ -49,6 +49,12 @@ typedef struct bl2_to_bl31_params_mem {
 	struct entry_point_info bl31_ep_info;
 } bl2_to_bl31_params_mem_t;
 
+struct random_serial_num {
+	uint64_t	magic;
+	uint64_t	data;
+	char		serialno[32];
+};
+
 /*******************************************************************************
  * Function and variable prototypes
  ******************************************************************************/
@@ -67,6 +73,8 @@ void configure_mmu_el3(unsigned long total_base,
 extern int flush_loader_image(void);
 extern int flush_user_images(char *cmdbuf, unsigned long addr,
 			     unsigned long length);
+extern int flush_random_serialno(unsigned long addr, unsigned long length);
+extern char *load_serialno(void);
 extern void hi6220_pll_init(void);
 extern void io_setup(void);
 extern int plat_get_image_source(const char *image_name,
