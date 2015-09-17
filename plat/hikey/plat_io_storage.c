@@ -44,6 +44,7 @@
 #include <platform_def.h>
 #include <semihosting.h>	/* For FOPEN_MODE_... */
 #include <string.h>
+#include "hikey_private.h"
 
 #define LOADER_MAX_ENTRIES		2
 #define PTABLE_MAX_ENTRIES		3
@@ -72,6 +73,9 @@ static uintptr_t emmc_dev_handle;
 
 #define SPARSE_FILL_BUFFER_ADDRESS	0x18000000
 #define SPARSE_FILL_BUFFER_SIZE		0x08000000
+
+/* Page 1024, since only a few pages before 2048 are used as partition table */
+#define SERIALNO_OFFSET			(1024 * 512)
 
 static const io_block_spec_t loader_mem_spec = {
 	/* l-loader.bin that contains bl1.bin */
@@ -565,6 +569,60 @@ static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_l
 		}
 	}
 	return 0;
+}
+
+/* Page 1024 is used to store serial number */
+int flush_random_serialno(unsigned long addr, unsigned long length)
+{
+	int result;
+
+	memset((void *)SPARSE_FILL_BUFFER_ADDRESS, 0, 512);
+	memcpy((void *)SPARSE_FILL_BUFFER_ADDRESS, (void *)addr, length);
+	result = flush_single_image(NORMAL_EMMC_NAME, SPARSE_FILL_BUFFER_ADDRESS,
+				    SERIALNO_OFFSET, 512);
+	return result;
+}
+
+char *load_serialno(void)
+{
+	uintptr_t img_handle, spec = 0;
+	size_t bytes_read;
+	struct random_serial_num *random = NULL;
+	int result;
+
+	result = plat_get_image_source(NORMAL_EMMC_NAME, &emmc_dev_handle,
+				       &spec);
+	if (result) {
+		NOTICE("failed to open emmc user data area\n");
+		return NULL;
+	}
+
+	result = io_open(emmc_dev_handle, spec, &img_handle);
+	if (result != IO_SUCCESS) {
+		NOTICE("Failed to open memmap device\n");
+		return NULL;
+	}
+
+	result = io_seek(img_handle, IO_SEEK_SET, SERIALNO_OFFSET);
+	if (result) {
+		NOTICE("Failed to seek at offset 0\n");
+		goto exit;
+	}
+	result = io_read(img_handle, SPARSE_FILL_BUFFER_ADDRESS, 512, &bytes_read);
+	if ((result != IO_SUCCESS) || (bytes_read < 512)) {
+		NOTICE("Failed to load '%s' file (%i)\n", LOADER_MEM_NAME, result);
+		goto exit;
+	}
+	io_close(img_handle);
+
+	random = (struct random_serial_num *)SPARSE_FILL_BUFFER_ADDRESS;
+	if (random->magic != RANDOM_MAGIC)
+		return NULL;
+
+	return random->serialno;
+exit:
+	io_close(img_handle);
+	return NULL;
 }
 
 /*

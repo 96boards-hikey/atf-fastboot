@@ -176,12 +176,63 @@ static void hikey_jumper_init(void)
 	VERBOSE("Jumper value:%d\n", gpio_get_value(24));
 }
 
+static inline char hex2str(unsigned int data)
+{
+	data &= 0xf;
+	if ((data >= 0) && (data <= 9))
+		return (char)(data + 0x30);
+	return (char)(data - 10 + 0x41);
+}
+
+static uint64_t rand(unsigned int data)
+{
+	int64_t quotient, remainder, t;
+
+	quotient = data / 127773;
+	remainder = data % 127773;
+	t = 16807 * remainder - 2836 * quotient;
+	if (t <= 0)
+		t += RANDOM_MAX;
+	return (t % ((uint64_t)RANDOM_MAX + 1));
+}
+
+static void generate_serialno(struct random_serial_num *random)
+{
+	unsigned int data, t;
+	int i;
+
+	data = mmio_read_32(AO_SC_SYSTEST_SLICER_CNT0);
+	t = rand(data);
+	random->data = ((uint64_t)t << 32) | data;
+	for (i = 0; i < 8; i++) {
+		random->serialno[i] = hex2str((t >> ((7 - i) << 2)) & 0xf);
+	}
+	for (i = 0; i < 8; i++) {
+		random->serialno[i + 8] = hex2str((data >> ((7 - i) << 2)) & 0xf);
+	}
+	random->serialno[16] = '\0';
+	random->magic = RANDOM_MAGIC;
+}
+
+static void hikey_verify_serialno(struct random_serial_num *random)
+{
+	char *serialno;
+
+	serialno = load_serialno();
+	if (serialno == NULL) {
+		generate_serialno(random);
+		flush_random_serialno((unsigned long)&random, sizeof(random));
+	}
+}
+
 /*******************************************************************************
  * Function which will perform any remaining platform-specific setup that can
  * occur after the MMU and data cache have been enabled.
  ******************************************************************************/
 void bl1_platform_setup(void)
 {
+	struct random_serial_num random;
+
 	hikey_gpio_init();
 	hi6220_pmussi_init();
 	hikey_hi6553_init();
@@ -195,6 +246,7 @@ void bl1_platform_setup(void)
 	if (query_boot_mode()) {
 		NOTICE("Enter fastboot mode...\n");
 		flush_loader_image();
+		hikey_verify_serialno(&random);
 		usb_download();
 	}
 }

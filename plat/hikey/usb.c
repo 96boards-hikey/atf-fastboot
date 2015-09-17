@@ -95,6 +95,9 @@ __attribute__ ((section("tzfw_coherent_mem")));
 static struct usb_request tx_req
 __attribute__ ((section("tzfw_coherent_mem")));
 
+static struct usb_string_descriptor serial_string
+__attribute__ ((section("tzfw_coherent_mem")));
+
 static const struct usb_string_descriptor string_devicename = {
 	24,
 	USB_DT_STRING,
@@ -120,7 +123,6 @@ static unsigned int rx_desc_bytes = 0;
 static unsigned long rx_addr;
 static unsigned long rx_length;
 static unsigned int last_one = 0;
-static struct usb_string_descriptor *serial_string = NULL;
 static char *cmdbuf;
 static struct usb_endpoint ep1in, ep1out;
 static int g_usb_enum_flag = 0;
@@ -695,8 +697,10 @@ void usb_handle_control_request(setup_packet* req)
 {
 	const void* addr = NULL;
 	int size = -1;
+	int i;
 	int maxpacket;
 	unsigned int data;
+	char *serialno;
 	struct usb_endpoint_descriptor epx;
 	struct usb_config_bundle const_bundle = {
 		.config = {
@@ -840,8 +844,24 @@ void usb_handle_control_request(setup_packet* req)
 				size = string_devicename.bLength;
 				break;
 			case 3:
-				addr = (NULL != serial_string) ? serial_string : (&serial_string_descriptor);
-				size = serial_string_descriptor.bLength;
+				serialno = load_serialno();
+				if (serialno == NULL) {
+					addr = &serial_string_descriptor;
+					size = serial_string_descriptor.bLength;
+				} else {
+					i = 0;
+					memcpy((void *)&serial_string,
+					       (void *)&serial_string_descriptor,
+					       sizeof(serial_string));
+					while (1) {
+						serial_string.wString[i] = serialno[i];
+						if (serialno[i] == '\0')
+							break;
+						i++;
+					}
+					addr = &serial_string;
+					size = serial_string.bLength;
+				}
 				break;
 			default:
 				break;
