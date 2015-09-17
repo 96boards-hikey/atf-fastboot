@@ -49,6 +49,9 @@ typedef struct bl2_to_bl31_params_mem {
 	struct entry_point_info bl31_ep_info;
 } bl2_to_bl31_params_mem_t;
 
+#define RANDOM_MAX		0x7fffffffffffffff
+#define RANDOM_MAGIC		0x9a4dbeaf
+
 struct random_serial_num {
 	uint64_t	magic;
 	uint64_t	data;

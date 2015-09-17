@@ -616,6 +616,9 @@ char *load_serialno(void)
 	io_close(img_handle);
 
 	random = (struct random_serial_num *)SPARSE_FILL_BUFFER_ADDRESS;
+	if (random->magic != RANDOM_MAGIC)
+		return NULL;
+
 	return random->serialno;
 exit:
 	io_close(img_handle);

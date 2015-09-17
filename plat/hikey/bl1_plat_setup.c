@@ -49,9 +49,6 @@
 #include "hikey_def.h"
 #include "hikey_private.h"
 
-#define RANDOM_MAX		0x7fffffffffffffff
-#define RANDOM_MAGIC		0x9a4dbeaf
-
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
  * of trusted RAM
@@ -199,7 +196,7 @@ static uint64_t rand(unsigned int data)
 	return (t % ((uint64_t)RANDOM_MAX + 1));
 }
 
-static void hikey_generate_sn(struct random_serial_num *random)
+static void generate_serialno(struct random_serial_num *random)
 {
 	unsigned int data, t;
 	int i;
@@ -215,6 +212,17 @@ static void hikey_generate_sn(struct random_serial_num *random)
 	}
 	random->serialno[16] = '\0';
 	random->magic = RANDOM_MAGIC;
+}
+
+static void hikey_verify_serialno(struct random_serial_num *random)
+{
+	char *serialno;
+
+	serialno = load_serialno();
+	if (serialno == NULL) {
+		generate_serialno(random);
+		flush_random_serialno((unsigned long)&random, sizeof(random));
+	}
 }
 
 /*******************************************************************************
@@ -238,8 +246,7 @@ void bl1_platform_setup(void)
 	if (query_boot_mode()) {
 		NOTICE("Enter fastboot mode...\n");
 		flush_loader_image();
-		hikey_generate_sn(&random);
-		flush_random_serialno((unsigned long)&random, sizeof(random));
+		hikey_verify_serialno(&random);
 		usb_download();
 	}
 }
