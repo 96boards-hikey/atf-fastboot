@@ -1278,6 +1278,14 @@ static unsigned long strtoul(const char *nptr, char **endptr, int base)
 	return data;
 }
 
+static void fb_serialno(char *cmdbuf)
+{
+	struct random_serial_num random;
+
+	generate_serialno(&random);
+	flush_random_serialno((unsigned long)&random, sizeof(random));
+}
+
 #define FB_DOWNLOAD_BASE	0x20000000
 
 static unsigned long fb_download_base, fb_download_size;
@@ -1350,6 +1358,10 @@ static void usb_rx_cmd_complete(unsigned actual, int stat)
 	} else if(memcmp(cmdbuf, (void *)"boot", 4) == 0) {
 		INFO(" - OKAY\n");
 
+		return;
+	} else if (memcmp(cmdbuf, (void *)"oem serialno", 12) == 0) {
+		fb_serialno(cmdbuf);
+		tx_status("OKAY");
 		return;
 	}
 

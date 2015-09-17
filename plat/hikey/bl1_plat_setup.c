@@ -196,7 +196,7 @@ static uint64_t rand(unsigned int data)
 	return (t % ((uint64_t)RANDOM_MAX + 1));
 }
 
-static void generate_serialno(struct random_serial_num *random)
+void generate_serialno(struct random_serial_num *random)
 {
 	unsigned int data, t;
 	int i;
