@@ -91,6 +91,7 @@ BL31_SOURCES		+=	drivers/arm/cci400/cci400.c		\
 				drivers/arm/gic/arm_gic.c		\
 				drivers/arm/gic/gic_v2.c		\
 				drivers/arm/gic/gic_v3.c		\
+				drivers/arm/gpio/gpio.c			\
 				lib/cpus/aarch64/cortex_a53.S		\
 				plat/common/aarch64/platform_mp_stack.S	\
 				plat/hikey/bl31_plat_setup.c		\
