@@ -36,6 +36,7 @@
 #include <cci400.h>
 #include <errno.h>
 #include <gic_v2.h>
+#include <gpio.h>
 #include <hi6220.h>
 #include <hisi_ipc.h>
 #include <hisi_pwrc.h>
@@ -43,6 +44,7 @@
 #include <platform.h>
 #include <platform_def.h>
 #include <psci.h>
+#include <sp804_timer.h>
 
 #include "hikey_def.h"
 #include "hikey_private.h"
@@ -203,6 +205,16 @@ static void hikey_affinst_suspend_finish(uint32_t afflvl,
 	return;
 }
 
+static void __dead2 hikey_system_off(void)
+{
+	gpio_set_value(0, 0);
+	mdelay(1000);
+	/* Send the system reset request since it fails to power off */
+	mmio_write_32(AO_SC_SYS_STAT0, 0x48698284);
+	wfi();
+	panic();
+}
+
 static void __dead2 hikey_system_reset(void)
 {
 	VERBOSE("%s: reset system\n", __func__);
@@ -231,7 +243,7 @@ static const plat_pm_ops_t hikey_plat_pm_ops = {
 	.affinst_standby	     = NULL,
 	.affinst_suspend	     = hikey_affinst_suspend,
 	.affinst_suspend_finish	     = hikey_affinst_suspend_finish,
-	.system_off		     = NULL,
+	.system_off		     = hikey_system_off,
 	.system_reset		     = hikey_system_reset,
 	.get_sys_suspend_power_state = hikey_get_sys_suspend_power_state,
 };
