@@ -405,6 +405,10 @@ static void hikey_gpio_init(void)
 	gpio_direction_output(33);
 	gpio_direction_output(34);
 	gpio_direction_output(35);
+
+	/* Initialize PWR_HOLD GPIO */
+	gpio_set_value(0, 1);
+	gpio_direction_output(0);
 }
 
 /*******************************************************************************
