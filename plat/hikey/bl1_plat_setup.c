@@ -34,6 +34,7 @@
 #include <bl_common.h>
 #include <cci400.h>
 #include <console.h>
+#include <ctype.h>
 #include <debug.h>
 #include <errno.h>
 #include <gpio.h>
@@ -212,6 +213,24 @@ void generate_serialno(struct random_serial_num *random)
 	}
 	random->serialno[16] = '\0';
 	random->magic = RANDOM_MAGIC;
+}
+
+int assign_serialno(char *cmdbuf, struct random_serial_num *random)
+{
+	int offset, i;
+
+	offset = 0;
+	while (*(cmdbuf + offset) == ' ')
+		offset++;
+	for (i = 0; i < 16; i++) {
+		if (isxdigit(*(cmdbuf + offset + i)))
+			continue;
+		return -EINVAL;
+	}
+	memcpy(random->serialno, cmdbuf + offset, 16);
+	random->serialno[16] = '\0';
+	random->magic = RANDOM_MAGIC;
+	return 0;
 }
 
 static void hikey_verify_serialno(struct random_serial_num *random)
