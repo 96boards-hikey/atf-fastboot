@@ -78,6 +78,7 @@ extern int flush_user_images(char *cmdbuf, unsigned long addr,
 			     unsigned long length);
 extern int flush_random_serialno(unsigned long addr, unsigned long length);
 extern void generate_serialno(struct random_serial_num *random);
+extern int assign_serialno(char *cmdbuf, struct random_serial_num *random);
 extern char *load_serialno(void);
 extern void hi6220_pll_init(void);
 extern void io_setup(void);

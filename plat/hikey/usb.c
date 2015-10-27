@@ -1241,6 +1241,12 @@ static void fb_getvar(char *cmdbuf)
 		}
 		tx_status(response);
 		rx_cmd();
+	} else if (!strncmp(cmdbuf + 7, "serialno", 8)) {
+		bytes = sprintf(response, "OKAY%s",
+				load_serialno());
+		response[bytes] = '\0';
+		tx_status(response);
+		rx_cmd();
 	}
 }
 
@@ -1284,6 +1290,18 @@ static void fb_serialno(char *cmdbuf)
 
 	generate_serialno(&random);
 	flush_random_serialno((unsigned long)&random, sizeof(random));
+}
+
+static int fb_assigned_sn(char *cmdbuf)
+{
+	struct random_serial_num random;
+	int ret;
+
+	ret = assign_serialno(cmdbuf, &random);
+	if (ret < 0)
+		return ret;
+	flush_random_serialno((unsigned long)&random, sizeof(random));
+	return 0;
 }
 
 #define FB_DOWNLOAD_BASE	0x20000000
@@ -1360,11 +1378,19 @@ static void usb_rx_cmd_complete(unsigned actual, int stat)
 
 		return;
 	} else if (memcmp(cmdbuf, (void *)"oem serialno", 12) == 0) {
-		fb_serialno(cmdbuf);
-		tx_status("OKAY");
-		return;
+		if (*(cmdbuf + 12) == '\0') {
+			fb_serialno(cmdbuf);
+			tx_status("OKAY");
+			rx_cmd();
+			return;
+		} else if (memcmp(cmdbuf + 12, (void *)" set", 4) == 0) {
+			if (fb_assigned_sn(cmdbuf + 16) == 0) {
+				tx_status("OKAY");
+				rx_cmd();
+				return;
+			}
+		}
 	}
-
 
 	tx_status("FAILinvalid command");
 	rx_cmd();
