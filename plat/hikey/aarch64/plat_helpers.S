@@ -80,6 +80,7 @@ func plat_report_exception
 	mov	x8, x30
 
 	/* Turn on LED according to x0 (0 -- f) */
+	/*
 	ldr	x2, =0xf7020000
 	and	x1, x0, #1
 	str	w1, [x2, #4]
@@ -89,6 +90,7 @@ func plat_report_exception
 	str	w1, [x2, #16]
 	and	x1, x0, #8
 	str	w1, [x2, #32]
+	*/
 
 	adr	x4, plat_err_str
 	bl	asm_print_str
