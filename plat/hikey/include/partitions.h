@@ -36,8 +36,8 @@
 #define EFI_NAMELEN			36
 
 struct ptentry {
-	unsigned int	start;
-	unsigned int	length;
+	uint64_t	start;
+	uint64_t	length;
 	unsigned int	flags;
 	unsigned int	loadaddr;
 	unsigned int	loadsize;

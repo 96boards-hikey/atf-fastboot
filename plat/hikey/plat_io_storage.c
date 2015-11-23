@@ -323,7 +323,7 @@ int update_fip_spec(void)
 			return IO_FAIL;
 		}
 	}
-	VERBOSE("%s: name:%s, start:%x, length:%x\n",
+	VERBOSE("%s: name:%s, start:%llx, length:%llx\n",
 		__func__, ptn->name, ptn->start, ptn->length);
 	fip_block_spec.offset = ptn->start;
 	fip_block_spec.length = ptn->length;
@@ -487,9 +487,10 @@ static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_l
 	chunk_header_t *chunk = NULL;
 	struct ptentry *ptn;
 	void *data = (void *)img_addr;
-	uint32_t length, out_blks = 0, out_length = 0;
+	uint64_t out_blks = 0, out_length = 0;
+	uint64_t length;
 	uint32_t fill_value;
-	uint32_t left, count;
+	uint64_t left, count;
 	int i, result;
 
 	ptn = find_ptn(cmdbuf);
@@ -497,9 +498,9 @@ static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_l
 		NOTICE("failed to find partition %s\n", cmdbuf);
 		return IO_FAIL;
 	}
-	length = header->total_blks * header->blk_sz;
+	length = (uint64_t)(header->total_blks) * (uint64_t)(header->blk_sz);
 	if (length > ptn->length) {
-		NOTICE("Unsparsed image length is %d, pentry length is %d.\n",
+		NOTICE("Unsparsed image length is %lld, pentry length is %lld.\n",
 			length, ptn->length);
 		return IO_FAIL;
 	}
@@ -508,7 +509,7 @@ static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_l
 	for (i = 0; i < header->total_chunks; i++) {
 		chunk = (chunk_header_t *)data;
 		data = (void *)((unsigned long)data + sizeof(chunk_header_t));
-		length = chunk->chunk_sz * header->blk_sz;
+		length = (uint64_t)chunk->chunk_sz * (uint64_t)header->blk_sz;
 
 		switch (chunk->chunk_type) {
 		case CHUNK_TYPE_RAW:
