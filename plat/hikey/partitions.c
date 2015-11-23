@@ -121,8 +121,8 @@ static int parse_entry(uintptr_t buf)
 	ret = convert_ascii_string(entry->name, (uint8_t *)ptable[entries].name);
 	if (ret < 0)
 		return ret;
-	ptable[entries].start = entry->first_lba * 512;
-	ptable[entries].length = (entry->last_lba - entry->first_lba + 1) * 512;
+	ptable[entries].start = (uint64_t)entry->first_lba * 512;
+	ptable[entries].length = (uint64_t)(entry->last_lba - entry->first_lba + 1) * 512;
 	entries++;
 	return 0;
 }
