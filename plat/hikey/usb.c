@@ -1350,6 +1350,15 @@ static void fb_flash(char *cmdbuf)
 	rx_cmd();
 }
 
+static void fb_reboot(char *cmdbuf)
+{
+	/* Send the system reset request */
+	mmio_write_32(AO_SC_SYS_STAT0, 0x48698284);
+
+	wfi();
+	panic();
+}
+
 static void usb_rx_cmd_complete(unsigned actual, int stat)
 {
 	if(stat != 0) return;
@@ -1362,7 +1371,8 @@ static void usb_rx_cmd_complete(unsigned actual, int stat)
 
 	if(memcmp(cmdbuf, (void *)"reboot", 6) == 0) {
 		tx_status("OKAY");
-		INFO("It's reboot command\n");
+		fb_reboot(cmdbuf);
+		return;
 	} else if (!memcmp(cmdbuf, (void *)"getvar:", 7)) {
 		fb_getvar(cmdbuf);
 		return;
