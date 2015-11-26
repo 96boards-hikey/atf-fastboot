@@ -48,6 +48,10 @@
 #define MMC0_BASE				0xf723d000
 #define MMC1_BASE				0xf723e000
 
+#define EDMAC_BASE				0xf7370000
+#define EDMAC_SEC_CTRL				(EDMAC_BASE + 0x694)
+#define EDMAC_AXI_CONF(x)			(EDMAC_BASE + 0x820 + (x << 6))
+
 #define PMUSSI_BASE				0xf8000000
 
 #define TIMER0_BASE				0xf8008000

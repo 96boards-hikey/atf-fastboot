@@ -36,12 +36,14 @@
 #include <bl_common.h>
 #include <cci400.h>
 #include <console.h>
+#include <debug.h>
 #include <hisi_ipc.h>
 #include <hisi_pwrc.h>
 #include <mmio.h>
 #include <platform.h>
 #include <stddef.h>
 #include <hi6220_regs_ao.h>
+#include <hi6220.h>
 
 #include "hikey_def.h"
 #include "hikey_private.h"
@@ -141,6 +143,19 @@ static void init_rtc(void)
 	mmio_write_32(AO_SC_PERIPH_CLKEN4, data);
 }
 
+static void init_edma(void)
+{
+	int i;
+
+	mmio_write_32(EDMAC_SEC_CTRL, 0x3);
+
+	for (i = 0; i <= 15; i++) {
+		VERBOSE("EDMAC_AXI_CONF(%d): data:0x%x\n", i, mmio_read_32(EDMAC_AXI_CONF(i)));
+		mmio_write_32(EDMAC_AXI_CONF(i), (1 << 6) | (1 << 18));
+		VERBOSE("EDMAC_AXI_CONF(%d): data:0x%x\n", i, mmio_read_32(EDMAC_AXI_CONF(i)));
+	}
+}
+
 /*******************************************************************************
  * Initialize the GIC.
  ******************************************************************************/
@@ -151,6 +166,7 @@ void bl31_platform_setup(void)
 	arm_gic_setup();
 
 	init_rtc();
+	init_edma();
 	hisi_ipc_init();
 	hisi_pwrc_setup();
 }
