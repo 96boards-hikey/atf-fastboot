@@ -1248,6 +1248,12 @@ static void fb_getvar(char *cmdbuf)
 		response[bytes] = '\0';
 		tx_status(response);
 		rx_cmd();
+	} else {
+		bytes = sprintf(response, "FAIL%s",
+					"unknown var");
+		response[bytes] = '\0';
+		tx_status(response);
+		rx_cmd();
 	}
 }
 
