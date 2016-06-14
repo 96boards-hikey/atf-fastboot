@@ -207,10 +207,24 @@ static void hikey_affinst_suspend_finish(uint32_t afflvl,
 
 static void __dead2 hikey_system_off(void)
 {
-	gpio_set_value(0, 0);
-	mdelay(1000);
-	/* Send the system reset request since it fails to power off */
-	mmio_write_32(AO_SC_SYS_STAT0, 0x48698284);
+	NOTICE("%s: off system\n", __func__);
+
+	/* pulling GPIO_0_0 low to trigger PMIC shutdown */
+	/* setting pinmux */
+	mmio_write_32(0xF8001810, 0x2);
+	/* setting pin direction */
+	mmio_write_8(0xF8011400, 1);
+	/* setting pin output value */
+	mmio_write_8(0xF8011004, 0);
+
+	/* PMIC shutdown depends on two conditions: GPIO_0_0 (PWR_HOLD) low,
+	 * and VBUS_DET < 3.6V. For HiKey, VBUS_DET is connected to VDD_4V2
+	 * through Jumper 1-2. So, to complete shutdown, user needs to manually
+	 * remove Jumper 1-2.
+	 */
+	NOTICE(".........................................................\n");
+	NOTICE(" IMPORTANT: Remove Jumper 1-2 to complete shutdown\n");
+	NOTICE(" DANGER:    SoC is still burning. DANGER!\n");
 	wfi();
 	panic();
 }
