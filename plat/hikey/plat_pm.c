@@ -207,6 +207,9 @@ static void hikey_affinst_suspend_finish(uint32_t afflvl,
 
 static void __dead2 hikey_system_off(void)
 {
+	unsigned int start, cnt, delta, delta_ms;
+	unsigned int show = 1;
+
 	NOTICE("%s: off system\n", __func__);
 
 	/* pulling GPIO_0_0 low to trigger PMIC shutdown */
@@ -222,9 +225,38 @@ static void __dead2 hikey_system_off(void)
 	 * through Jumper 1-2. So, to complete shutdown, user needs to manually
 	 * remove Jumper 1-2.
 	 */
-	NOTICE(".........................................................\n");
-	NOTICE(" IMPORTANT: Remove Jumper 1-2 to complete shutdown\n");
-	NOTICE(" DANGER:    SoC is still burning. DANGER!\n");
+	/* init timer00 */
+	mmio_write_32(TIMER00_CONTROL, 0);
+	mmio_write_32(TIMER00_LOAD, 0xffffffff);
+	/* free running */
+	mmio_write_32(TIMER00_CONTROL, 0x82);
+
+	/* adding delays */
+	start = mmio_read_32(TIMER00_VALUE);
+	do {
+		cnt = mmio_read_32(TIMER00_VALUE);
+		if (cnt > start) {
+			delta = 0xffffffff - cnt;
+			delta += start;
+		} else
+			delta = start - cnt;
+		delta_ms = delta / 19200;
+		if (delta_ms > 1000 && show) { /* after 1 second */
+			/* if we are still alive, that means Jumper
+			 * 1-2 is mounted. Need to warn and reboot
+			 */
+			NOTICE("..........................................\n");
+			NOTICE(" IMPORTANT: Remove Jumper 1-2 to shutdown\n");
+			NOTICE(" DANGER:    SoC is still burning. DANGER!\n");
+			NOTICE(" Board will be reboot to avoid overheat\n");
+			NOTICE("..........................................\n");
+			show = 0;
+		}
+	} while (delta_ms < 5000); /* no. of delay in ms */
+
+	/* Send the system reset request */
+	mmio_write_32(AO_SC_SYS_STAT0, 0x48698284);
+
 	wfi();
 	panic();
 }
