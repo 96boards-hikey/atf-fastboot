@@ -41,6 +41,7 @@
 #include <string.h>
 #include <usb.h>
 #include "hikey_private.h"
+#include <bl_common.h>
 
 #define NUM_ENDPOINTS			16
 
@@ -1161,7 +1162,7 @@ static void dvc_and_picophy_init_chip(void)
 	data = mmio_read_32(PERI_SC_PERIPH_CTRL5);
 	data &= ~PERI_CTRL5_PICOPHY_BC_MODE;
 	mmio_write_32(PERI_SC_PERIPH_CTRL5, data);
-    
+
 	udelay(20000);
 }
 
@@ -1236,15 +1237,51 @@ static void fb_getvar(char *cmdbuf)
 			response[bytes] = '\0';
 			flash_ptn = NULL;
 		} else {
-			bytes = sprintf(response, "OKAY");
-			response[bytes] = '\0';
 			flash_ptn = ptn;
+			if (!strncmp(cmdbuf +22, "system", 6) || !strncmp(cmdbuf +22, "userdata", 8) ||
+				!strncmp(cmdbuf +22, "cache", 5)) {
+				bytes = sprintf(response, "OKAYext4");
+				response[bytes] = '\0';
+			} else {
+				bytes = sprintf(response, "OKAYraw");
+				response[bytes] = '\0';
+			}
 		}
 		tx_status(response);
 		rx_cmd();
+        } else if (!strncmp(cmdbuf + 7, "partition-size:", 15)) {
+                bytes = sprintf(part_name, "%s", cmdbuf + 22);
+                ptn = find_ptn(part_name);
+                if (ptn == NULL) {
+                        bytes = sprintf(response, "FAIL%s",
+                                        "invalid partition");
+                        response[bytes] = '\0';
+                        flash_ptn = NULL;
+                } else {
+                        bytes = sprintf(response, "OKAY%llx",ptn->length);
+                        response[bytes] = '\0';
+                        flash_ptn = ptn;
+                }
+                tx_status(response);
+                rx_cmd();
 	} else if (!strncmp(cmdbuf + 7, "serialno", 8)) {
 		bytes = sprintf(response, "OKAY%s",
 				load_serialno());
+		response[bytes] = '\0';
+		tx_status(response);
+		rx_cmd();
+	} else if (!strncmp(cmdbuf + 7, "version-bootloader", 18)) {
+		bytes = sprintf(response, "OKAY%s", version_string);
+		response[bytes] = '\0';
+		tx_status(response);
+		rx_cmd();
+	} else if (!strncmp(cmdbuf + 7, "version-baseband", 16)) {
+		bytes = sprintf(response, "OKAYN/A");
+		response[bytes] = '\0';
+		tx_status(response);
+		rx_cmd();
+	} else if (!strncmp(cmdbuf + 7, "product", 8)) {
+		bytes = sprintf(response, "OKAYHisilicon HiKey");
 		response[bytes] = '\0';
 		tx_status(response);
 		rx_cmd();
