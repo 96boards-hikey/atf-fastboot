@@ -1423,6 +1423,10 @@ static void usb_rx_cmd_complete(unsigned actual, int stat)
 		fb_download(cmdbuf);
 		return;
 	} else if(memcmp(cmdbuf, (void *)"erase:", 6) == 0) {
+                /* FIXME erase is not supported but we return success */
+                tx_status("OKAY");
+                rx_cmd();
+                return;
 	} else if(memcmp(cmdbuf, (void *)"flash:", 6) == 0) {
 		INFO("recog updatefile\n");
 		fb_flash(cmdbuf);
