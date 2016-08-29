@@ -1281,7 +1281,7 @@ static void fb_getvar(char *cmdbuf)
 		tx_status(response);
 		rx_cmd();
 	} else if (!strncmp(cmdbuf + 7, "product", 8)) {
-		bytes = sprintf(response, "OKAYHisilicon HiKey");
+		bytes = sprintf(response, "OKAYhikey");
 		response[bytes] = '\0';
 		tx_status(response);
 		rx_cmd();
