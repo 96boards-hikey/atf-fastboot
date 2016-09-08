@@ -47,6 +47,8 @@
 
 #define USB_BLOCK_HIGH_SPEED_SIZE	512
 
+#define VERSION_BOOTLOADER	"0.4"
+
 struct ep_type {
 	unsigned char		active;
 	unsigned char		busy;
@@ -1271,7 +1273,7 @@ static void fb_getvar(char *cmdbuf)
 		tx_status(response);
 		rx_cmd();
 	} else if (!strncmp(cmdbuf + 7, "version-bootloader", 18)) {
-		bytes = sprintf(response, "OKAY%s", version_string);
+		bytes = sprintf(response, "OKAY%s", VERSION_BOOTLOADER);
 		response[bytes] = '\0';
 		tx_status(response);
 		rx_cmd();
