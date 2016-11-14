@@ -70,6 +70,7 @@
 #define LDO15_REG_ADJ				0x080
 #define LDO19_REG_ADJ				0x084
 #define LDO20_REG_ADJ				0x085
+#define LDO21_REG_ADJ				0x086
 #define LDO22_REG_ADJ				0x087
 #define DR_LED_CTRL				0x098
 #define DR_OUT_CTRL				0x099
