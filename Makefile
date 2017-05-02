@@ -133,8 +133,14 @@ CFLAGS			+= 	-nostdinc -ffreestanding -Wall			\
 				-Werror -Wmissing-include-dirs			\
 				-mgeneral-regs-only -mstrict-align		\
 				-std=c99 -c -Os ${DEFINES} ${INCLUDES} -fno-pic
+ifneq ($(findstring clang,$(notdir $(CC))),)
+CFLAGS			+=	-target aarch64-elf
+CFLAGS			+=	-ffunction-sections -fdata-sections
+else
+CFLAGS			+=	-march=armv8-a
 CFLAGS			+=	-ffunction-sections -fdata-sections		\
 				-fno-delete-null-pointer-checks
+endif
 
 LDFLAGS			+=	--fatal-warnings -O1
 LDFLAGS			+=	--gc-sections
