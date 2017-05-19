@@ -110,89 +110,28 @@
 #define MMC_DATA_BASE			(MMC_DESC_BASE + MMC_DESC_SIZE)
 #define MMC_DATA_SIZE			0x00800000
 
+#define LOADER_BASE			(0xf9801000)
+#define LOADER_LIMIT			(0xf9810000)
+#define LOADER_SIZE			(LOADER_LIMIT - LOADER_BASE)
+
 /*******************************************************************************
  * BL1 specific defines.
  * BL1 RW data is relocated from ROM to RAM at runtime so we need 2 base
  * addresses.
  ******************************************************************************/
-#define BL1_RO_BASE			(XG2RAM0_BASE + BL1_XG2RAM0_OFFSET)
-#define BL1_RO_LIMIT			(XG2RAM0_BASE + 0x10000)
-#define BL1_RW_BASE			(BL1_RO_LIMIT)	/* 0xf981_0000 */
-#define BL1_RW_SIZE			(BL31_LIMIT - BL1_RW_BASE)
-#define BL1_RW_LIMIT			(BL31_LIMIT)
-
-/*******************************************************************************
- * BL2 specific defines.
- ******************************************************************************/
-/* Set it in DDR first. If necessary, we can set them into SRAM again. */
-#define BL2_BASE			(BL1_RW_BASE + 0x8000)	/* 0xf981_8000 */
-#define BL2_LIMIT			(BL2_BASE + 0x40000)
-
-/*******************************************************************************
- * BL3-1 specific defines.
- ******************************************************************************/
-#define BL31_BASE			(BL2_LIMIT)	/* 0xf985_8000 */
-#define BL31_LIMIT			(BL31_BASE + 0x40000)
-
-/*******************************************************************************
- * BL3-2 specific defines.
- ******************************************************************************/
-
-/*
- * The TSP can execute either from Trusted SRAM or Trusted DRAM.
- */
-#define BL32_SRAM_BASE                  BL31_LIMIT
-#define BL32_SRAM_LIMIT                 (BL31_LIMIT+0x00080000) /* 512K */
-
-#define BL32_DRAM_BASE                  DRAM_SEC_BASE
-#define BL32_DRAM_LIMIT                 (DRAM_SEC_BASE+DRAM_SEC_SIZE)
-
-#if (PLAT_TSP_LOCATION_ID == PLAT_TRUSTED_SRAM_ID)
-#define TSP_SEC_MEM_BASE		BL32_SRAM_BASE
-#define TSP_SEC_MEM_SIZE		(BL32_SRAM_LIMIT - BL32_SRAM_BASE)
-#define BL32_BASE			BL32_SRAM_BASE
-#define BL32_LIMIT			BL32_SRAM_LIMIT
-#elif (PLAT_TSP_LOCATION_ID == PLAT_TRUSTED_DRAM_ID)
-#define TSP_SEC_MEM_BASE		BL32_DRAM_BASE
-#define TSP_SEC_MEM_SIZE		(BL32_DRAM_LIMIT - BL32_DRAM_BASE)
-#define BL32_BASE			BL32_DRAM_BASE
-#define BL32_LIMIT			BL32_DRAM_LIMIT
-#else
-#error "Unsupported PLAT_TSP_LOCATION_ID value"
-#endif
-
-/*******************************************************************************
- * BL3-0 specific defines:
- *
- * BL3-0 is loaded for mcu firmware, firstly load it into temperary buffer
- * into 0x0100_0000; then BL2 will parse the sections and load then into
- * seperated buffers as needed.
- *
- ******************************************************************************/
-#define BL30_BASE			(DRAM_NS_BASE + 0x01000000)
-#define BL30_LIMIT			(DRAM_NS_BASE + 0x01100000)
-#define BL30_SIZE			(BL30_LIMIT - BL30_BASE)
-
-/*******************************************************************************
- * Load address of BL3-3 in the HiKey port
- ******************************************************************************/
-#define NS_IMAGE_OFFSET			(DRAM_BASE + 0x35000000)  /* 848MB */
+#define BL1_RO_BASE			(0xf9818000)
+#define BL1_RO_LIMIT			(BL1_RO_BASE + 0x10000)
+#define BL1_RW_BASE			(BL1_RO_LIMIT)	/* 0xf982_8000 */
+#define BL1_RW_SIZE			(0xf9898000 - BL1_RW_BASE)
+#define BL1_RW_LIMIT			(0xf9898000)
 
 /*******************************************************************************
  * Platform specific page table and MMU setup constants
  ******************************************************************************/
 #define ADDR_SPACE_SIZE			(1ull << 32)
 
-#if IMAGE_BL1 || IMAGE_BL32
+#if IMAGE_BL1
 # define MAX_XLAT_TABLES		3
-#endif
-
-#if IMAGE_BL2
-# define MAX_XLAT_TABLES		4
-#endif
-
-#if IMAGE_BL31
-# define MAX_XLAT_TABLES		4
 #endif
 
 #define MAX_MMAP_REGIONS		16

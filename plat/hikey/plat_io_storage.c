@@ -46,6 +46,7 @@
 #include <string.h>
 #include "hikey_private.h"
 
+/* Only loader & BL1 should be flushed into eMMC */
 #define LOADER_MAX_ENTRIES		2
 #define PTABLE_MAX_ENTRIES		3
 #define USER_MAX_ENTRIES		2
@@ -80,12 +81,12 @@ static uintptr_t emmc_dev_handle;
 static const io_block_spec_t loader_mem_spec = {
 	/* l-loader.bin that contains bl1.bin */
 	.offset = LOADER_RAM_BASE,
-	.length = BL1_RO_LIMIT - LOADER_RAM_BASE,
+	.length = 0xf9810000 - LOADER_RAM_BASE,
 };
 
 static const io_block_spec_t boot_emmc_spec = {
 	.offset = MMC_LOADER_BASE,
-	.length = BL1_RO_LIMIT - LOADER_RAM_BASE,
+	.length = 0xf9810000 - LOADER_RAM_BASE,
 };
 
 static const io_block_spec_t normal_emmc_spec = {

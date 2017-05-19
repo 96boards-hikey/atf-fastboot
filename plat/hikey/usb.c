@@ -32,7 +32,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <debug.h>
-#include <gpio.h>
 #include <hi6220.h>
 #include <mmio.h>
 #include <partitions.h>
@@ -1445,22 +1444,6 @@ static void usb_rx_cmd_complete(unsigned actual, int stat)
 			return;
 		} else if (memcmp(cmdbuf + 12, (void *)" set", 4) == 0) {
 			if (fb_assigned_sn(cmdbuf + 16) == 0) {
-				tx_status("OKAY");
-				rx_cmd();
-				return;
-			}
-		}
-	} else if (memcmp(cmdbuf, (void *)"oem led", 7) == 0) {
-		if ((*(cmdbuf + 7) >= '1') && (*(cmdbuf + 7) <= '4')) {
-			int led;
-			led = *(cmdbuf + 7) - '0';
-			if (memcmp(cmdbuf + 8, (void *)" on", 3) == 0) {
-				gpio_set_value(31 + led, 1);
-				tx_status("OKAY");
-				rx_cmd();
-				return;
-			} else if (memcmp(cmdbuf + 8, (void *)" off", 4) == 0) {
-				gpio_set_value(31 + led, 0);
 				tx_status("OKAY");
 				rx_cmd();
 				return;

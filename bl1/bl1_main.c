@@ -114,110 +114,14 @@ void bl1_main(void)
 
 	INFO("BL1: RAM 0x%lx - 0x%lx\n", BL1_RAM_BASE, BL1_RAM_LIMIT);
 
-#if DEBUG
-	unsigned long sctlr_el3 = read_sctlr_el3();
-#endif
 	image_info_t bl2_image_info = { {0} };
 	entry_point_info_t bl2_ep = { {0} };
-	meminfo_t *bl1_tzram_layout;
-	meminfo_t *bl2_tzram_layout = 0x0;
-	int err;
-
-	/*
-	 * Ensure that MMU/Caches and coherency are turned on
-	 */
-	assert(sctlr_el3 | SCTLR_M_BIT);
-	assert(sctlr_el3 | SCTLR_C_BIT);
-	assert(sctlr_el3 | SCTLR_I_BIT);
-
-	/* Perform remaining generic architectural setup from EL3 */
-	bl1_arch_setup();
 
 	/* Perform platform setup in BL1. */
 	bl1_platform_setup();
 
 	SET_PARAM_HEAD(&bl2_image_info, PARAM_IMAGE_BINARY, VERSION_1, 0);
 	SET_PARAM_HEAD(&bl2_ep, PARAM_EP, VERSION_1, 0);
-
-	/* Find out how much free trusted ram remains after BL1 load */
-	bl1_tzram_layout = bl1_plat_sec_mem_layout();
-
-#if TRUSTED_BOARD_BOOT
-	/* Initialize authentication module */
-	auth_init();
-
-	/*
-	 * Load the BL2 certificate into the BL2 region. This region will be
-	 * overwritten by the image, so the authentication module is responsible
-	 * for storing the relevant data from the certificate (keys, hashes,
-	 * etc.) so it can be used later.
-	 */
-	err = load_image(bl1_tzram_layout,
-			 BL2_CERT_NAME,
-			 BL2_BASE,
-			 &bl2_image_info,
-			 NULL);
-	if (err) {
-		ERROR("Failed to load BL2 certificate.\n");
-		panic();
-	}
-
-	err = auth_verify_obj(AUTH_BL2_IMG_CERT, bl2_image_info.image_base,
-			bl2_image_info.image_size);
-	if (err) {
-		ERROR("Failed to validate BL2 certificate.\n");
-		panic();
-	}
-#endif /* TRUSTED_BOARD_BOOT */
-
-	/* Load the BL2 image */
-	err = load_image(bl1_tzram_layout,
-			 BL2_IMAGE_NAME,
-			 BL2_BASE,
-			 &bl2_image_info,
-			 &bl2_ep);
-	if (err) {
-		/*
-		 * TODO: print failure to load BL2 but also add a tzwdog timer
-		 * which will reset the system eventually.
-		 */
-		ERROR("Failed to load BL2 firmware.\n");
-		panic();
-	}
-
-#if TRUSTED_BOARD_BOOT
-	err = auth_verify_obj(AUTH_BL2_IMG, bl2_image_info.image_base,
-				bl2_image_info.image_size);
-	if (err) {
-		ERROR("Failed to validate BL2 image.\n");
-		panic();
-	}
-
-	/* After working with data, invalidate the data cache */
-	inv_dcache_range(bl2_image_info.image_base,
-			(size_t)bl2_image_info.image_size);
-#endif /* TRUSTED_BOARD_BOOT */
-
-	/*
-	 * Create a new layout of memory for BL2 as seen by BL1 i.e.
-	 * tell it the amount of total and free memory available.
-	 * This layout is created at the first free address visible
-	 * to BL2. BL2 will read the memory layout before using its
-	 * memory for other purposes.
-	 */
-	bl2_tzram_layout = (meminfo_t *) bl1_tzram_layout->free_base;
-	bl1_init_bl2_mem_layout(bl1_tzram_layout, bl2_tzram_layout);
-
-	bl1_plat_set_bl2_ep_info(&bl2_image_info, &bl2_ep);
-	bl2_ep.args.arg1 = (unsigned long)bl2_tzram_layout;
-	NOTICE("BL1: Booting BL2\n");
-	INFO("BL1: BL2 address = 0x%llx\n",
-		(unsigned long long) bl2_ep.pc);
-	INFO("BL1: BL2 spsr = 0x%x\n", bl2_ep.spsr);
-	VERBOSE("BL1: BL2 memory layout address = 0x%llx\n",
-		(unsigned long long) bl2_tzram_layout);
-
-	bl1_run_bl2(&bl2_ep);
 
 	return;
 }

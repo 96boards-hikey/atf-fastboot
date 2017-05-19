@@ -56,6 +56,10 @@
 					0x1000,				\
 					MT_DEVICE | MT_RW | MT_NS)
 
+#define MAP_LOADER	MAP_REGION_FLAT(LOADER_BASE,			\
+					LOADER_SIZE,			\
+					MT_DEVICE | MT_RW | MT_NS)
+
 #define MAP_SRAM	MAP_REGION_FLAT(SRAM_BASE,			\
 					SRAM_SIZE,			\
 					MT_DEVICE | MT_RW | MT_SECURE)
@@ -70,50 +74,10 @@ static const mmap_region_t hikey_mmap[] = {
 	MAP_DEVICE,
 	MAP_NS_DRAM,
 	MAP_ROM_PARAM,
+	MAP_LOADER,
 	{0}
 };
 #endif
-#if IMAGE_BL2
-static const mmap_region_t hikey_mmap[] = {
-	MAP_DEVICE,
-	MAP_NS_DRAM,
-	MAP_TSP_MEM,
-	MAP_SRAM,
-	{0}
-};
-#endif
-#if IMAGE_BL31
-static const mmap_region_t hikey_mmap[] = {
-	MAP_DEVICE,
-	MAP_NS_DRAM,
-	MAP_TSP_MEM,
-	MAP_SRAM,
-	{0}
-};
-#endif
-#if IMAGE_BL32
-static const mmap_region_t hikey_mmap[] = {
-	MAP_DEVICE,
-	MAP_NS_DRAM,
-	{0}
-};
-#endif
-
-/* Array of secure interrupts to be configured by the gic driver */
-const unsigned int irq_sec_array[] = {
-	IRQ_SEC_PHY_TIMER,
-	IRQ_SEC_SGI_0,
-	IRQ_SEC_SGI_1,
-	IRQ_SEC_SGI_2,
-	IRQ_SEC_SGI_3,
-	IRQ_SEC_SGI_4,
-	IRQ_SEC_SGI_5,
-	IRQ_SEC_SGI_6,
-	IRQ_SEC_SGI_7
-};
-
-const unsigned int num_sec_irqs = sizeof(irq_sec_array) /
-	sizeof(irq_sec_array[0]);
 
 /*******************************************************************************
  * Macro generating the code for the function setting up the pagetables as per
@@ -145,18 +109,3 @@ const unsigned int num_sec_irqs = sizeof(irq_sec_array) /
 /* Define EL1 and EL3 variants of the function initialising the MMU */
 DEFINE_CONFIGURE_MMU_EL(1)
 DEFINE_CONFIGURE_MMU_EL(3)
-
-unsigned long plat_get_ns_image_entrypoint(void)
-{
-	return NS_IMAGE_OFFSET;
-}
-
-uint64_t plat_get_syscnt_freq(void)
-{
-	return 1200000;
-}
-
-void plat_gic_init(void)
-{
-	arm_gic_init(GICC_BASE, GICD_BASE, 0, irq_sec_array, num_sec_irqs);
-}
