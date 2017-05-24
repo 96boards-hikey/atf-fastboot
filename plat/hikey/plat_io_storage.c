@@ -635,10 +635,7 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 {
 	struct entry_head entries[5];
 	struct ptentry *ptn;
-	size_t length;
-	ssize_t offset;
 	int result = IO_FAIL;
-	int i, fp;
 
 	result = fetch_entry_head((void *)img_addr, USER_MAX_ENTRIES, entries);
 	switch (result) {
@@ -665,26 +662,8 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 			WARN("it's not for ptable\n");
 			return IO_FAIL;
 		}
-		/* currently it's for partition table */
-		/* the first block is for entry headers */
-		fp = 512;
-
-		for (i = 0; i < USER_MAX_ENTRIES; i++) {
-			if (entries[i].flag != 0) {
-				WARN("Invalid flag in entry:0x%x\n",
-					entries[i].flag);
-				return IO_NOT_SUPPORTED;
-			}
-			if (entries[i].count == 0)
-				continue;
-			length = entries[i].count * 512;
-			offset = MMC_BASE + entries[i].start * 512;
-			VERBOSE("i:%d, start:%x, count:%x\n",
-				i, entries[i].start, entries[i].count);
-			result = flush_single_image(NORMAL_EMMC_NAME,
-						img_addr + fp, offset, length);
-			fp += entries[i].count * 512;
-		}
+		result = flush_single_image(NORMAL_EMMC_NAME,
+					img_addr, 0, img_length);
 		get_partition();
 		break;
 	case IO_FAIL:
