@@ -39,33 +39,6 @@
 #include "bl1_private.h"
 
 /*******************************************************************************
- * Runs BL2 from the given entry point. It results in dropping the
- * exception level
- ******************************************************************************/
-static void __dead2 bl1_run_bl2(entry_point_info_t *bl2_ep)
-{
-	bl1_arch_next_el_setup();
-
-	/* Tell next EL what we want done */
-	bl2_ep->args.arg0 = RUN_IMAGE;
-
-	if (GET_SECURITY_STATE(bl2_ep->h.attr) == NON_SECURE)
-		change_security_state(GET_SECURITY_STATE(bl2_ep->h.attr));
-
-	write_spsr_el3(bl2_ep->spsr);
-	write_elr_el3(bl2_ep->pc);
-
-	eret(bl2_ep->args.arg0,
-		bl2_ep->args.arg1,
-		bl2_ep->args.arg2,
-		bl2_ep->args.arg3,
-		bl2_ep->args.arg4,
-		bl2_ep->args.arg5,
-		bl2_ep->args.arg6,
-		bl2_ep->args.arg7);
-}
-
-/*******************************************************************************
  * The next function has a weak definition. Platform specific code can override
  * it if it wishes to.
  ******************************************************************************/
