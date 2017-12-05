@@ -72,6 +72,8 @@ static const io_dev_connector_t *dw_mmc_dev_con;
 static struct block_ops dw_mmc_ops;
 static uintptr_t emmc_dev_handle;
 
+static char sn_str[32];
+
 #define SPARSE_FILL_BUFFER_ADDRESS	0x18000000
 #define SPARSE_FILL_BUFFER_SIZE		0x08000000
 
@@ -621,7 +623,12 @@ char *load_serialno(void)
 	if (random->magic != RANDOM_MAGIC)
 		return NULL;
 
-	return random->serialno;
+	result = unicode_str_to_ascii_str(random->serialno, sn_str);
+	if (result) {
+		NOTICE("Invalid serial number\n");
+		return NULL;
+	}
+	return sn_str;
 exit:
 	io_close(img_handle);
 	return NULL;

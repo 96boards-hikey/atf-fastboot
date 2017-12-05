@@ -77,6 +77,8 @@ extern int flush_loader_image(void);
 extern int flush_user_images(char *cmdbuf, unsigned long addr,
 			     unsigned long length);
 extern int flush_random_serialno(unsigned long addr, unsigned long length);
+extern int ascii_str_to_unicode_str(char *ascii_str, void *unicode_str);
+extern int unicode_str_to_ascii_str(void *unicode_str, char *ascii_str);
 extern void generate_serialno(struct random_serial_num *random);
 extern int assign_serialno(char *cmdbuf, struct random_serial_num *random);
 extern char *load_serialno(void);
