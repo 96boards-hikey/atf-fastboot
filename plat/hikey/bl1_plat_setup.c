@@ -135,27 +135,59 @@ static uint64_t rand(unsigned int data)
 	return (t % ((uint64_t)RANDOM_MAX + 1));
 }
 
+int ascii_str_to_unicode_str(char *ascii_str, void *unicode_str)
+{
+	int i;
+
+	if ((ascii_str == NULL) || (unicode_str == NULL)) {
+		return -EINVAL;
+	}
+	memset(unicode_str, 0, 33);
+	for (i = 0; i < 16; i++) {
+		*((char *)unicode_str + (i << 1)) = *(ascii_str + i);
+	}
+	return 0;
+}
+
+int unicode_str_to_ascii_str(void *unicode_str, char *ascii_str)
+{
+	int i;
+
+	if ((ascii_str == NULL) || (unicode_str == NULL)) {
+		return -EINVAL;
+	}
+	for (i = 0; i < 16; i++) {
+		*(ascii_str + i) = *((char *)unicode_str + (i << 1));
+	}
+	*(ascii_str + 16) = '\0';
+	return 0;
+}
+
 void generate_serialno(struct random_serial_num *random)
 {
 	unsigned int data, t;
 	int i;
+	char ascii_sn[17];
 
 	data = mmio_read_32(AO_SC_SYSTEST_SLICER_CNT0);
 	t = rand(data);
 	random->data = ((uint64_t)t << 32) | data;
+	memset(&ascii_sn, 0, 17);
 	for (i = 0; i < 8; i++) {
-		random->serialno[i] = hex2str((t >> ((7 - i) << 2)) & 0xf);
+		ascii_sn[i] = hex2str((t >> ((7 - i) << 2)) & 0xf);
 	}
 	for (i = 0; i < 8; i++) {
-		random->serialno[i + 8] = hex2str((data >> ((7 - i) << 2)) & 0xf);
+		ascii_sn[i + 8] = hex2str((data >> ((7 - i) << 2)) & 0xf);
 	}
-	random->serialno[16] = '\0';
+	ascii_sn[16] = '\0';
+	ascii_str_to_unicode_str(ascii_sn, random->serialno);
 	random->magic = RANDOM_MAGIC;
 }
 
 int assign_serialno(char *cmdbuf, struct random_serial_num *random)
 {
 	int offset, i;
+	char ascii_sn[17];
 
 	offset = 0;
 	while (*(cmdbuf + offset) == ' ')
@@ -165,8 +197,9 @@ int assign_serialno(char *cmdbuf, struct random_serial_num *random)
 			continue;
 		return -EINVAL;
 	}
-	memcpy(random->serialno, cmdbuf + offset, 16);
-	random->serialno[16] = '\0';
+	memset(&ascii_sn, 0, 17);
+	memcpy(&ascii_sn, cmdbuf + offset, 16);
+	ascii_str_to_unicode_str(ascii_sn, random->serialno);
 	random->magic = RANDOM_MAGIC;
 	return 0;
 }
