@@ -634,6 +634,38 @@ exit:
 	return NULL;
 }
 
+static int flush_ptable(unsigned long img_addr, unsigned long img_length)
+{
+	struct entry_head entries[5];
+	size_t length;
+	ssize_t offset;
+	int i, fp;
+	int result = IO_FAIL;
+
+	result = fetch_entry_head((void *)img_addr, USER_MAX_ENTRIES, entries);
+	if (result != IO_SUCCESS)
+		return result;
+	/* ptable with entry header */
+	fp = 512;	/* skip the entry header */
+	for (i = 0; i < USER_MAX_ENTRIES; i++) {
+		if (entries[i].flag != 0) {
+			WARN("Invalid flag in entry:0x%x\n",
+				entries[i].flag);
+			return IO_NOT_SUPPORTED;
+		}
+		if (entries[i].count == 0)
+			continue;
+		length = entries[i].count * 512;
+		offset = MMC_BASE + entries[i].start * 512;
+		VERBOSE("i:%d, start:%x, count:%x\n",
+			i, entries[i].start, entries[i].count);
+		result = flush_single_image(NORMAL_EMMC_NAME,
+					img_addr + fp, offset, length);
+		fp += entries[i].count * 512;
+	}
+	return result;
+}
+
 /*
  * Flush bios.bin into User Data Area in eMMC
  */
@@ -649,6 +681,7 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 	case IO_NOT_SUPPORTED:
 		if (!strncmp(cmdbuf, "fastboot", 8) ||
 		    !strncmp(cmdbuf, "bios", 4)) {
+			/* Find fastboot image */
 			update_fip_spec();
 		}
 		if (is_sparse_image(img_addr)) {
@@ -665,12 +698,16 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 		}
 		break;
 	case IO_SUCCESS:
+		/*
+		 * Only return IO_SUCCESS for l-loader.bin & ptable.img.
+		 * But l-loader.bin is already flushed by flush_loader_image().
+		 * So here should be ptable with entry header format.
+		 */
 		if (strncmp(cmdbuf, "ptable", 6)) {
 			WARN("it's not for ptable\n");
 			return IO_FAIL;
 		}
-		result = flush_single_image(NORMAL_EMMC_NAME,
-					img_addr, 0, img_length);
+		result = flush_ptable(img_addr, img_length);
 		get_partition();
 		break;
 	case IO_FAIL:
