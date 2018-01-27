@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014-2015, Linaro Ltd and Contributors. All rights reserved.
- * Copyright (c) 2014-2015, Hisilicon Ltd and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, Linaro Ltd and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, Hisilicon Ltd and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -344,7 +344,11 @@ static int fetch_entry_head(void *buf, int num, struct entry_head *hd)
 	return IO_NOT_SUPPORTED;
 }
 
-static int flush_loader(void)
+/*
+ * Flush l-loader.bin (loader & bl2.bin) into Boot Area1 of eMMC.
+ */
+static int flush_loader_image(const char *mmc_name, unsigned long img_addr,
+			      unsigned long img_length)
 {
 	struct entry_head entries[5];
 	uintptr_t img_handle, spec;
@@ -353,7 +357,7 @@ static int flush_loader(void)
 	ssize_t offset;
 	int i, fp;
 
-	result = fetch_entry_head((void *)(FLUSH_BASE + 28),
+	result = fetch_entry_head((void *)(img_addr + 28),
 				  LOADER_MAX_ENTRIES, entries);
 	if (result) {
 		WARN("failed to parse entries in loader image\n");
@@ -366,7 +370,7 @@ static int flush_loader(void)
 			WARN("Invalid flag in entry:0x%x\n", entries[i].flag);
 			return IO_NOT_SUPPORTED;
 		}
-		result = plat_get_image_source(BOOT_EMMC_NAME, &emmc_dev_handle,
+		result = plat_get_image_source(mmc_name, &emmc_dev_handle,
 					       &spec);
 		if (result) {
 			WARN("failed to open emmc boot area\n");
@@ -386,9 +390,10 @@ static int flush_loader(void)
 		if (result)
 			goto exit;
 
-		if (i == 1)
+		if (i == 1) {
 			fp = (entries[1].start - entries[0].start) * 512;
-		result = io_write(img_handle, FLUSH_BASE + fp, length,
+		}
+		result = io_write(img_handle, img_addr + fp, length,
 				  &bytes_read);
 		if ((result != IO_SUCCESS) || (bytes_read < length)) {
 			WARN("Failed to write '%s' file (%i)\n",
@@ -403,43 +408,6 @@ exit:
 	return result;
 }
 
-/*
- * Flush l-loader.bin (loader & bl1.bin) into Boot Area1 of eMMC.
- */
-int flush_loader_image(void)
-{
-	uintptr_t bl1_image_spec;
-	int result = IO_FAIL;
-	size_t bytes_read, length;
-	uintptr_t img_handle;
-
-	result = plat_get_image_source(LOADER_MEM_NAME, &loader_mem_dev_handle,
-				       &bl1_image_spec);
-
-	result = io_open(loader_mem_dev_handle, bl1_image_spec, &img_handle);
-	if (result != IO_SUCCESS) {
-		WARN("Failed to open memmap device\n");
-		goto exit;
-	}
-	length = loader_mem_spec.length;
-	result = io_read(img_handle, FLUSH_BASE, length, &bytes_read);
-	if ((result != IO_SUCCESS) || (bytes_read < length)) {
-		WARN("Failed to load '%s' file (%i)\n", LOADER_MEM_NAME, result);
-		goto exit;
-	}
-	io_close(img_handle);
-
-	result = flush_loader();
-	if (result != IO_SUCCESS) {
-		io_dev_close(loader_mem_dev_handle);
-		return result;
-	}
-exit:
-	io_close(img_handle);
-	io_dev_close(loader_mem_dev_handle);
-	return result;
-}
-
 static int flush_single_image(const char *mmc_name, unsigned long img_addr,
 				ssize_t offset, size_t length)
 {
@@ -450,7 +418,7 @@ static int flush_single_image(const char *mmc_name, unsigned long img_addr,
 	result = plat_get_image_source(mmc_name, &emmc_dev_handle,
 				       &spec);
 	if (result) {
-		NOTICE("failed to open emmc user data area\n");
+		NOTICE("failed to open eMMC user data area\n");
 		return result;
 	}
 
@@ -667,7 +635,7 @@ static int flush_ptable(unsigned long img_addr, unsigned long img_length)
 }
 
 /*
- * Flush bios.bin into User Data Area in eMMC
+ * Flush images into eMMC
  */
 int flush_user_images(char *cmdbuf, unsigned long img_addr,
 		      unsigned long img_length)
@@ -676,14 +644,40 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 	struct ptentry *ptn;
 	int result = IO_FAIL;
 
-	result = fetch_entry_head((void *)img_addr, USER_MAX_ENTRIES, entries);
-	switch (result) {
-	case IO_NOT_SUPPORTED:
-		if (!strncmp(cmdbuf, "fastboot", 8) ||
-		    !strncmp(cmdbuf, "bios", 4)) {
-			/* Find fastboot image */
-			update_fip_spec();
+	if (!strncmp(cmdbuf, "ptable", 6)) {
+		result = fetch_entry_head((void *)img_addr, USER_MAX_ENTRIES,
+					  entries);
+		switch (result) {
+		case IO_NOT_SUPPORTED:
+			/* raw partition table */
+			img_length = (img_length + 512 - 1) / 512 * 512;
+			result = flush_single_image(NORMAL_EMMC_NAME, img_addr,
+						    0, img_length);
+			break;
+		case IO_SUCCESS:
+			/* partition table with header */
+			result = flush_ptable(img_addr, img_length);
+			break;
+		default:
+			WARN("Invalid image for ptable, result: %d\n", result);
+			break;
 		}
+		if (result == IO_SUCCESS) {
+			get_partition();
+		}
+	} else if (!strncmp(cmdbuf, "loader", 6)) {
+		result = flush_loader_image(BOOT_EMMC_NAME, img_addr,
+					    img_length);
+	} else if (!strncmp(cmdbuf, "fastboot", 8) ||
+		   !strncmp(cmdbuf, "bios", 4)) {
+		result = update_fip_spec();
+		if (result == IO_SUCCESS) {
+			img_length = (img_length + 512 - 1) / 512 * 512;
+			result = flush_single_image(NORMAL_EMMC_NAME, img_addr,
+						    fip_block_spec.offset,
+						    img_length);
+		}
+	} else {
 		if (is_sparse_image(img_addr)) {
 			result = do_unsparse(cmdbuf, img_addr, img_length);
 		} else {
@@ -696,23 +690,6 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 			result = flush_single_image(NORMAL_EMMC_NAME, img_addr,
 						    ptn->start, img_length);
 		}
-		break;
-	case IO_SUCCESS:
-		/*
-		 * Only return IO_SUCCESS for l-loader.bin & ptable.img.
-		 * But l-loader.bin is already flushed by flush_loader_image().
-		 * So here should be ptable with entry header format.
-		 */
-		if (strncmp(cmdbuf, "ptable", 6)) {
-			WARN("it's not for ptable\n");
-			return IO_FAIL;
-		}
-		result = flush_ptable(img_addr, img_length);
-		get_partition();
-		break;
-	case IO_FAIL:
-		WARN("failed to parse entries in user image.\n");
-		return result;
 	}
 	return result;
 }

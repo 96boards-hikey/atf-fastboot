@@ -73,7 +73,6 @@ void configure_mmu_el3(unsigned long total_base,
 		       unsigned long ro_limit,
 		       unsigned long coh_start,
 		       unsigned long coh_limit);
-extern int flush_loader_image(void);
 extern int flush_user_images(char *cmdbuf, unsigned long addr,
 			     unsigned long length);
 extern int flush_random_serialno(unsigned long addr, unsigned long length);
