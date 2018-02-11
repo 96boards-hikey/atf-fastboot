@@ -534,11 +534,12 @@ static int do_unsparse(char *cmdbuf, unsigned long img_addr, unsigned long img_l
 				return IO_FAIL;
 			}
 			fill_value = *(unsigned int *)data;
-			if (fill_value != 0) {
-				NOTICE("sparse: filled value shouldn't be zero.\n");
-			}
+			if (length < SPARSE_FILL_BUFFER_SIZE)
+				count = length;
+			else
+				count = SPARSE_FILL_BUFFER_SIZE;
 			memset((void *)SPARSE_FILL_BUFFER_ADDRESS,
-				0, SPARSE_FILL_BUFFER_SIZE);
+				fill_value, count);
 			left = length;
 			while (left > 0) {
 				if (left < SPARSE_FILL_BUFFER_SIZE)
