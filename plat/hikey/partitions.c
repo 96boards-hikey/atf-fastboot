@@ -131,9 +131,16 @@ static int parse_entry(uintptr_t buf)
 static void create_dummy_entry(void)
 {
 	int bytes;
+
+	entries = 0;
 	ptable[entries].start = 0;
 	ptable[entries].length = 0;
 	bytes = sprintf(ptable[entries].name, "ptable");
+	ptable[entries].name[bytes] = '\0';
+	entries++;
+	ptable[entries].start = 0;
+	ptable[entries].length = 0;
+	bytes = sprintf(ptable[entries].name, "loader");
 	ptable[entries].name[bytes] = '\0';
 	entries++;
 }

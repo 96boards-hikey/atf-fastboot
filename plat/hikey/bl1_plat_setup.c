@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014-2015, Linaro Ltd and Contributors. All rights reserved.
- * Copyright (c) 2014-2015, Hisilicon Ltd and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, Linaro Ltd and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, Hisilicon Ltd and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -228,7 +228,6 @@ void bl1_platform_setup(void)
 	io_setup();
 	get_partition();
 	NOTICE("Enter fastboot mode...\n");
-	flush_loader_image();
 	hikey_verify_serialno(&random);
 	usb_download();
 }
