@@ -51,7 +51,7 @@ unsigned long page_align(unsigned long value, unsigned dir)
 	return value;
 }
 
-static inline unsigned int is_page_aligned (unsigned long addr) {
+inline unsigned int is_page_aligned (unsigned long addr) {
 	const unsigned long page_size = 1 << FOUR_KB_SHIFT;
 
 	return (addr & (page_size - 1)) == 0;

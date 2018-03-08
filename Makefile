@@ -99,6 +99,7 @@ ifneq (${DEBUG}, 0)
 	LOG_LEVEL	:=	40
 else
 	BUILD_TYPE	:=	release
+$(eval $(call add_define,NDEBUG))
 	# Use LOG_LEVEL_NOTICE by default for release builds
 	LOG_LEVEL	:=	20
 endif
@@ -130,7 +131,7 @@ ASFLAGS			+= 	-nostdinc -ffreestanding -Wa,--fatal-warnings	\
 				-mgeneral-regs-only -D__ASSEMBLY__		\
 				${DEFINES} ${INCLUDES}
 CFLAGS			+= 	-nostdinc -ffreestanding -Wall			\
-				-Werror -Wmissing-include-dirs			\
+				-Wmissing-include-dirs				\
 				-mgeneral-regs-only -mstrict-align		\
 				-std=c99 -c -Os ${DEFINES} ${INCLUDES} -fno-pic
 ifneq ($(findstring clang,$(notdir $(CC))),)
