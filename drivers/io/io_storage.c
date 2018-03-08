@@ -34,7 +34,6 @@
 #include <platform_def.h>
 #include <stddef.h>
 
-
 /* Storage for a fixed maximum number of IO entities, definable by platform */
 static io_entity_t entity_pool[MAX_IO_HANDLES];
 

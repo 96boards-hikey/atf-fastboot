@@ -756,7 +756,6 @@ void usb_handle_control_request(setup_packet* req)
 		.bDescriptorType	= USB_DT_DEVICE,
 		.bcdUSB			= 0x0200,
 		.bDeviceClass		= 0,
-		.bDeviceClass		= 0,
 		.bDeviceProtocol	= 0,
 		.bMaxPacketSize0	= 0x40,
 		.idVendor		= 0x18d1,
@@ -1199,7 +1198,7 @@ int init_usb(void)
 	while (mmio_read_32(GRSTCTL) & GRSTCTL_CSFTRST);
 
 	/* wait for OTG AHB master idle */
-	while ((mmio_read_32(GRSTCTL) & GRSTCTL_AHBIDLE) == 0);
+	while ((mmio_read_32(GRSTCTL) & GRSTCTL_AHBIDLE) == 0) {}
 
 	VERBOSE("Reset usb controller done\n");
 

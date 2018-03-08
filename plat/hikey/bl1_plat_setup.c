@@ -115,7 +115,7 @@ void bl1_plat_arch_setup(void)
 			  BL1_COHERENT_RAM_LIMIT);
 }
 
-static inline char hex2str(unsigned int data)
+static inline char hex2str(int data)
 {
 	data &= 0xf;
 	if ((data >= 0) && (data <= 9))
