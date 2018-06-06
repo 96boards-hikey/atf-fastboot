@@ -75,6 +75,8 @@ void configure_mmu_el3(unsigned long total_base,
 		       unsigned long coh_limit);
 extern int flush_user_images(char *cmdbuf, unsigned long addr,
 			     unsigned long length);
+extern int erase_partitions(char *cmdbuf, unsigned long addr,
+			    unsigned long length);
 extern int flush_random_serialno(unsigned long addr, unsigned long length);
 extern int ascii_str_to_unicode_str(char *ascii_str, void *unicode_str);
 extern int unicode_str_to_ascii_str(void *unicode_str, char *ascii_str);

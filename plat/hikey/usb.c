@@ -1402,6 +1402,13 @@ static void fb_reboot(char *cmdbuf)
 	panic();
 }
 
+static void fb_erase(char *cmdbuf)
+{
+	erase_partitions(cmdbuf + 6, FB_DOWNLOAD_BASE, FB_MAX_FILE_SIZE);
+	tx_status("OKAY");
+	rx_cmd();
+}
+
 static void usb_rx_cmd_complete(unsigned actual, int stat)
 {
 	if(stat != 0) return;
@@ -1424,8 +1431,7 @@ static void usb_rx_cmd_complete(unsigned actual, int stat)
 		return;
 	} else if(memcmp(cmdbuf, (void *)"erase:", 6) == 0) {
                 /* FIXME erase is not supported but we return success */
-                tx_status("OKAY");
-                rx_cmd();
+		fb_erase(cmdbuf);
                 return;
 	} else if(memcmp(cmdbuf, (void *)"flash:", 6) == 0) {
 		INFO("recog updatefile\n");
