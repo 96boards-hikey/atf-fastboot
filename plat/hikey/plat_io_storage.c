@@ -694,3 +694,35 @@ int flush_user_images(char *cmdbuf, unsigned long img_addr,
 	}
 	return result;
 }
+
+int erase_partitions(char *cmdbuf, unsigned long img_addr,
+		     unsigned long img_length)
+{
+	struct ptentry *ptn;
+	unsigned long part_size;
+	int result;
+
+	if (!strncmp(cmdbuf, "ptable", 6)) {
+		/* delete 34 blocks from block 0 */
+		img_length = 34 * 512;
+		memset((void *)img_addr, 0xff, img_length);
+		result = flush_single_image(NORMAL_EMMC_NAME, img_addr, 0,
+					    img_length);
+		return result;
+	}
+	ptn = find_ptn(cmdbuf);
+	if (!ptn) {
+		WARN("failed to find partition %s\n", cmdbuf);
+		return IO_FAIL;
+	}
+	part_size = ptn->length;
+	img_length = img_length / 512 * 512;
+	/* don't need to replace all data in the partition */
+	if (img_length > part_size) {
+		img_length = part_size;
+	}
+	memset((void *)img_addr, 0xff, img_length);
+	result = flush_single_image(NORMAL_EMMC_NAME, img_addr, ptn->start,
+				    img_length);
+	return result;
+}
